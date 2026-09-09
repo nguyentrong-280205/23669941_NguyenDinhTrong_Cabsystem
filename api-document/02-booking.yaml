@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Booking API
+  version: 1.0.0
+  description: |
+    API phục vụ nhập điểm đón/điểm đến, chọn loại xe, kiểm tra và tạo/hủy Booking.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Booking
+
+paths:
+  /vehicle-types:
+    get:
+      tags: [Booking]
+      summary: Danh sách loại xe
+      security: [{bearerAuth: []}]
+      x-fr: [FR07]
+      responses:
+        '200':
+          description: Các loại xe
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/VehicleType'}
+  /bookings/validate:
+    post:
+      tags: [Booking]
+      summary: Kiểm tra thông tin đặt xe
+      security: [{bearerAuth: []}]
+      x-fr: [FR05, FR06, FR07, FR09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '200':
+          description: Kết quả kiểm tra
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid]
+                properties:
+                  valid: {type: boolean}
+                  errors:
+                    type: array
+                    items: {type: string}
+        '422': {description: Dữ liệu không hợp lệ}
+  /bookings:
+    post:
+      tags: [Booking]
+      summary: Tạo yêu cầu đặt xe
+      security: [{bearerAuth: []}]
+      x-fr: [FR05, FR06, FR07, FR08, FR09]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BookingRequest'}
+      responses:
+        '201':
+          description: Booking được tạo và chuyển sang tìm Driver
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Booking'}
+        '422': {description: Thiếu hoặc sai thông tin đặt xe}
+    get:
+      tags: [Booking]
+      summary: Xem lịch sử yêu cầu đặt xe
+      security: [{bearerAuth: []}]
+      x-fr: [FR03]
+      parameters:
+        - {name: status, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Danh sách Booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Booking'}
+                  total: {type: integer}
+  /bookings/{bookingId}:
+    get:
+      tags: [Booking]
+      summary: Xem chi tiết Booking
+      security: [{bearerAuth: []}]
+      x-fr: [FR08, FR29, FR56, FR57]
+      parameters:
+        - {name: bookingId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Booking
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Booking'}
+        '404': {description: Không tìm thấy Booking}
+    delete:
+      tags: [Booking]
+      summary: Hủy yêu cầu đặt xe
+      security: [{bearerAuth: []}]
+      x-fr: [FR10]
+      parameters:
+        - {name: bookingId, in: path, required: true, schema: {type: string}}
+      responses:
+        '204': {description: Hủy thành công}
+        '409': {description: Không thể hủy theo chính sách/trạng thái hiện tại}
+        '404': {description: Không tìm thấy Booking}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    BookingRequest:
+      type: object
+      required: [pickup, destination, vehicleTypeId]
+      properties:
+        pickup: {$ref: '#/components/schemas/LocationPoint'}
+        destination: {$ref: '#/components/schemas/LocationPoint'}
+        vehicleTypeId: {type: string}
+    LocationPoint:
+      type: object
+      required: [address, location]
+      properties:
+        address: {type: string}
+        location:
+          type: object
+          required: [latitude, longitude]
+          properties:
+            latitude: {type: number, format: double}
+            longitude: {type: number, format: double}
+    VehicleType:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+        description: {type: string}
+    Booking:
+      type: object
+      properties:
+        id: {type: string}
+        customerId: {type: string}
+        pickup: {$ref: '#/components/schemas/LocationPoint'}
+        destination: {$ref: '#/components/schemas/LocationPoint'}
+        vehicleTypeId: {type: string}
+        status: {type: string, enum: [SEARCHING_DRIVER, DRIVER_ASSIGNED, CANCELLED, NO_DRIVER_FOUND, COMPLETED]}
+        createdAt: {type: string, format: date-time}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR05
+  - FR06
+  - FR07
+  - FR08
+  - FR09
+  - FR10
+

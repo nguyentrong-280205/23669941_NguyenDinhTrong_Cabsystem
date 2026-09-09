@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Account API
+  version: 1.0.0
+  description: |
+    API quản lý đăng ký, đăng nhập và thông tin cá nhân.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Account
+
+paths:
+  /auth/register:
+    post:
+      tags: [Account]
+      summary: Đăng ký tài khoản Customer/Driver
+      security: []
+      x-fr: [FR01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role, phone, password]
+              properties:
+                role: {type: string, enum: [CUSTOMER, DRIVER]}
+                phone: {type: string}
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+                fullName: {type: string}
+      responses:
+        '201':
+          description: Tài khoản được tạo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '409': {description: Số điện thoại/email đã tồn tại}
+        '422': {description: Thông tin không hợp lệ}
+  /auth/login:
+    post:
+      tags: [Account]
+      summary: Đăng nhập
+      security: []
+      x-fr: [FR02, FR56]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: {type: string}
+                password: {type: string, format: password}
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: {type: string}
+                  user: {$ref: '#/components/schemas/User'}
+        '401': {description: Thông tin đăng nhập không chính xác}
+  /me:
+    get:
+      tags: [Account]
+      summary: Xem thông tin tài khoản hiện tại
+      security: [{bearerAuth: []}]
+      x-fr: [FR03, FR56, FR57]
+      responses:
+        '200':
+          description: Thông tin người dùng
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+    patch:
+      tags: [Account]
+      summary: Cập nhật thông tin cá nhân
+      security: [{bearerAuth: []}]
+      x-fr: [FR03, FR57, FR58]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName: {type: string}
+                email: {type: string, format: email}
+                phone: {type: string}
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '422': {description: Thông tin không hợp lệ}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR01
+  - FR02
+  - FR03
+  - FR04
+  - FR56
+  - FR57
+  - FR58
+

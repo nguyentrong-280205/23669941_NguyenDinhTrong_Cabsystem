@@ -1,0 +1,117 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Notification API
+  version: 1.0.0
+  description: |
+    API quản lý thông báo và tích hợp Notification Provider theo hướng có thể mở rộng kênh.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Notification
+  - name: Notification Provider
+
+paths:
+  /notifications:
+    get:
+      tags: [Notification]
+      summary: Xem thông báo của người dùng
+      security: [{bearerAuth: []}]
+      x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [PENDING, SENT, FAILED]}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Danh sách Notification
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Notification'}
+  /notifications/{notificationId}:
+    get:
+      tags: [Notification]
+      summary: Xem chi tiết thông báo
+      security: [{bearerAuth: []}]
+      x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
+      parameters:
+        - {name: notificationId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Notification
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Notification'}
+  /internal/notifications:
+    post:
+      tags: [Notification]
+      summary: Tạo và gửi thông báo theo sự kiện nghiệp vụ
+      security: [{bearerAuth: []}]
+      x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
+      description: API nội bộ; lỗi Notification Provider không làm gián đoạn quy trình đặt/thực hiện chuyến.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientId, event]
+              properties:
+                recipientId: {type: string}
+                event: {type: string, enum: [BOOKING_RECEIVED, DRIVER_ASSIGNED, DRIVER_ARRIVED, TRIP_COMPLETED, PAYMENT_SUCCESS, PAYMENT_FAILED, NEW_TRIP]}
+                data: {type: object, additionalProperties: true}
+      responses:
+        '202': {description: Notification được xếp hàng xử lý}
+  /internal/notifications/{notificationId}/delivery-result:
+    post:
+      tags: [Notification Provider]
+      summary: Ghi nhận kết quả gửi từ Notification Provider
+      security: []
+      x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [SENT, FAILED]}
+                providerMessageId: {type: string}
+      parameters:
+        - {name: notificationId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Đã ghi nhận kết quả gửi}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Notification:
+      type: object
+      properties:
+        id: {type: string}
+        recipientId: {type: string}
+        event: {type: string}
+        status: {type: string, enum: [PENDING, SENT, FAILED]}
+        createdAt: {type: string, format: date-time}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR40
+  - FR41
+  - FR42
+  - FR43
+  - FR44
+  - FR45
+

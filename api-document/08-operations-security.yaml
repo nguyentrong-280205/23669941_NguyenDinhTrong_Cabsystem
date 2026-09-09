@@ -1,0 +1,386 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Operations & Security API
+  version: 1.0.0
+  description: |
+    API quản trị Customer, Driver, Vehicle, Trip, phân quyền và Audit Log.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Customer Management
+  - name: Driver Management
+  - name: Vehicle Management
+  - name: Trip Operations
+  - name: Access Control
+  - name: Audit
+
+paths:
+  /operator/customers:
+    get:
+      tags: [Customer Management]
+      summary: Xem danh sách Customer
+      security: [{bearerAuth: []}]
+      x-fr: [FR46, FR57]
+      responses:
+        '200':
+          description: Danh sách Customer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Customer'}
+                  total: {type: integer}
+  /operator/customers/{customerId}:
+    get:
+      tags: [Customer Management]
+      summary: Xem thông tin Customer
+      security: [{bearerAuth: []}]
+      x-fr: [FR47, FR57, FR58]
+      parameters:
+        - {name: customerId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Customer
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Customer'}
+        '404': {description: Customer không tồn tại}
+    patch:
+      tags: [Customer Management]
+      summary: Cập nhật thông tin Customer
+      security: [{bearerAuth: []}]
+      x-fr: [FR48, FR57, FR58]
+      parameters:
+        - {name: customerId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                fullName: {type: string}
+                email: {type: string, format: email}
+                phone: {type: string}
+      responses:
+        '200': {description: Cập nhật thành công}
+        '403': {description: Không có quyền}
+  /operator/customers/{customerId}/status:
+    patch:
+      tags: [Customer Management]
+      summary: Khóa/Mở khóa tài khoản Customer
+      security: [{bearerAuth: []}]
+      x-fr: [FR49, FR57, FR59]
+      parameters:
+        - {name: customerId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [ACTIVE, LOCKED]}
+      responses:
+        '200': {description: Trạng thái tài khoản được cập nhật}
+  /operator/drivers:
+    get:
+      tags: [Driver Management]
+      summary: Xem danh sách và thông tin Driver
+      security: [{bearerAuth: []}]
+      x-fr: [FR50, FR57, FR58]
+      responses:
+        '200':
+          description: Danh sách Driver
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Driver'}
+                  total: {type: integer}
+  /operator/drivers/{driverId}:
+    get:
+      tags: [Driver Management]
+      summary: Xem thông tin Driver
+      security: [{bearerAuth: []}]
+      x-fr: [FR50, FR57, FR58]
+      parameters:
+        - {name: driverId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Driver
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Driver'}
+    patch:
+      tags: [Driver Management]
+      summary: Cập nhật thông tin/trạng thái Driver
+      security: [{bearerAuth: []}]
+      x-fr: [FR50, FR57, FR59]
+      parameters:
+        - {name: driverId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName: {type: string}
+                availability: {type: string, enum: [AVAILABLE, UNAVAILABLE]}
+      responses:
+        '200': {description: Cập nhật thành công}
+  /operator/vehicles:
+    get:
+      tags: [Vehicle Management]
+      summary: Xem danh sách Vehicle
+      security: [{bearerAuth: []}]
+      x-fr: [FR51, FR57]
+      responses:
+        '200':
+          description: Danh sách Vehicle
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Vehicle'}
+    post:
+      tags: [Vehicle Management]
+      summary: Thêm Vehicle
+      security: [{bearerAuth: []}]
+      x-fr: [FR51, FR57, FR59]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '201': {description: Vehicle được tạo}
+        '409': {description: Biển số xe đã tồn tại}
+  /operator/vehicles/{vehicleId}:
+    patch:
+      tags: [Vehicle Management]
+      summary: Cập nhật Vehicle
+      security: [{bearerAuth: []}]
+      x-fr: [FR51, FR57, FR59]
+      parameters:
+        - {name: vehicleId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/VehicleUpdate'}
+      responses:
+        '200': {description: Vehicle được cập nhật}
+  /operator/trips:
+    get:
+      tags: [Trip Operations]
+      summary: Tra cứu lịch sử Trip
+      security: [{bearerAuth: []}]
+      x-fr: [FR52, FR54, FR57]
+      parameters:
+        - {name: status, in: query, schema: {type: string}}
+        - {name: driverId, in: query, schema: {type: string}}
+        - {name: customerId, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Danh sách Trip
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Trip'}
+                  total: {type: integer}
+  /operator/roles:
+    get:
+      tags: [Access Control]
+      summary: Xem vai trò/quyền
+      security: [{bearerAuth: []}]
+      x-fr: [FR04, FR57]
+      responses:
+        '200':
+          description: Danh sách role và permission
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+  /operator/users/{userId}/role:
+    patch:
+      tags: [Access Control]
+      summary: Cập nhật vai trò người dùng
+      security: [{bearerAuth: []}]
+      x-fr: [FR04, FR57, FR59]
+      parameters:
+        - {name: userId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: {type: string, enum: [CUSTOMER, DRIVER, OPERATOR, ADMIN]}
+      responses:
+        '200': {description: Vai trò được cập nhật}
+        '403': {description: Không có quyền quản lý phân quyền}
+  /operator/audit-logs:
+    get:
+      tags: [Audit]
+      summary: Tra cứu Audit Log
+      security: [{bearerAuth: []}]
+      x-fr: [FR59]
+      parameters:
+        - {name: actorId, in: query, schema: {type: string}}
+        - {name: resourceType, in: query, schema: {type: string}}
+        - {name: resourceId, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Audit Logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/AuditLog'}
+                  total: {type: integer}
+  /internal/audit-logs:
+    post:
+      tags: [Audit]
+      summary: Ghi Audit Log cho thao tác quan trọng
+      security: [{bearerAuth: []}]
+      x-fr: [FR59]
+      description: API nội bộ; các thao tác quản trị/quan trọng được ghi nhận để truy vết.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditLogInput'
+      responses:
+        '201': {description: Audit Log được ghi nhận}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Customer:
+      type: object
+      properties:
+        id: {type: string}
+        fullName: {type: string}
+        email: {type: string, format: email}
+        phone: {type: string}
+        role: {type: string, enum: [CUSTOMER]}
+        status: {type: string, enum: [ACTIVE, LOCKED]}
+    Driver:
+      type: object
+      properties:
+        id: {type: string}
+        fullName: {type: string}
+        email: {type: string, format: email}
+        phone: {type: string}
+        role: {type: string, enum: [DRIVER]}
+        availability: {type: string, enum: [AVAILABLE, UNAVAILABLE]}
+    Vehicle:
+      type: object
+      properties:
+        id: {type: string}
+        driverId: {type: string}
+        vehicleTypeId: {type: string}
+        plateNumber: {type: string}
+        status: {type: string, enum: [ACTIVE, INACTIVE]}
+    VehicleInput:
+      type: object
+      required: [driverId, vehicleTypeId, plateNumber]
+      properties:
+        driverId: {type: string}
+        vehicleTypeId: {type: string}
+        plateNumber: {type: string}
+    VehicleUpdate:
+      type: object
+      properties:
+        vehicleTypeId: {type: string}
+        plateNumber: {type: string}
+        status: {type: string, enum: [ACTIVE, INACTIVE]}
+    Trip:
+      type: object
+      properties:
+        id: {type: string}
+        bookingId: {type: string}
+        driverId: {type: string}
+        status: {type: string}
+    Role:
+      type: object
+      properties:
+        role: {type: string, enum: [CUSTOMER, DRIVER, OPERATOR, ADMIN]}
+        permissions:
+          type: array
+          items: {type: string}
+    AuditLog:
+      type: object
+      properties:
+        id: {type: string}
+        actorId: {type: string}
+        action: {type: string}
+        resourceType: {type: string}
+        resourceId: {type: string}
+        createdAt: {type: string, format: date-time}
+        details: {type: object, additionalProperties: true}
+    AuditLogInput:
+      type: object
+      required: [actorId, action, resourceType]
+      properties:
+        actorId: {type: string}
+        action: {type: string}
+        resourceType: {type: string}
+        resourceId: {type: string}
+        details: {type: object, additionalProperties: true}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR04
+  - FR46
+  - FR47
+  - FR48
+  - FR49
+  - FR50
+  - FR51
+  - FR52
+  - FR53
+  - FR54
+  - FR55
+  - FR56
+  - FR57
+  - FR58
+  - FR59
+

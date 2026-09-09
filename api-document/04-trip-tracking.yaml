@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Trip & Tracking API
+  version: 1.0.0
+  description: |
+    API cho nhận/trạng thái Trip, cập nhật vị trí, theo dõi và lịch sử chuyến.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Trip
+  - name: Tracking
+  - name: Operations
+
+paths:
+  /trips/{tripId}:
+    get:
+      tags: [Trip]
+      summary: Xem thông tin Trip
+      security: [{bearerAuth: []}]
+      x-fr: [FR23, FR29, FR30, FR56, FR57]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Trip
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Trip'}
+        '404': {description: Không tìm thấy Trip}
+  /trips/{tripId}/status:
+    patch:
+      tags: [Trip]
+      summary: Cập nhật trạng thái chuyến
+      security: [{bearerAuth: []}]
+      x-fr: [FR23, FR24, FR25, FR26, FR27]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [ARRIVED, PICKED_UP, IN_PROGRESS, COMPLETED]}
+      responses:
+        '200':
+          description: Trạng thái được cập nhật
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Trip'}
+        '409': {description: Trình tự trạng thái không hợp lệ}
+  /trips/{tripId}/location:
+    put:
+      tags: [Trip]
+      summary: Cập nhật vị trí Driver trong Trip
+      security: [{bearerAuth: []}]
+      x-fr: [FR28, FR31]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Coordinates'}
+      responses:
+        '204': {description: Vị trí được ghi nhận}
+        '409': {description: Trip không ở trạng thái cho phép cập nhật vị trí}
+  /trips/{tripId}/tracking:
+    get:
+      tags: [Tracking]
+      summary: Theo dõi trạng thái, Driver, vị trí và ETA
+      security: [{bearerAuth: []}]
+      x-fr: [FR29, FR30, FR31, FR32]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Thông tin tracking mới nhất
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripTracking'
+        '404': {description: Không tìm thấy Trip}
+  /trips/history:
+    get:
+      tags: [Trip]
+      summary: Xem lịch sử chuyến
+      security: [{bearerAuth: []}]
+      x-fr: [FR33, FR54]
+      parameters:
+        - {name: status, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Lịch sử Trip
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Trip'}
+                  total: {type: integer}
+  /operator/trips/active:
+    get:
+      tags: [Operations]
+      summary: Theo dõi các Trip đang diễn ra
+      security: [{bearerAuth: []}]
+      x-fr: [FR52, FR53]
+      responses:
+        '200':
+          description: Các Trip đang diễn ra
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Trip'}
+  /operator/trips/{tripId}/support:
+    post:
+      tags: [Operations]
+      summary: Ghi nhận hỗ trợ xử lý Trip lỗi
+      security: [{bearerAuth: []}]
+      x-fr: [FR53]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: {type: string}
+      responses:
+        '200': {description: Đã ghi nhận xử lý}
+        '403': {description: Không có quyền}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Coordinates:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: {type: number, format: double}
+        longitude: {type: number, format: double}
+    Trip:
+      type: object
+      properties:
+        id: {type: string}
+        bookingId: {type: string}
+        driverId: {type: string}
+        status: {type: string, enum: [ACCEPTED, ARRIVED, PICKED_UP, IN_PROGRESS, COMPLETED, CANCELLED, ISSUE]}
+    TripTracking:
+      type: object
+      properties:
+        trip: {$ref: '#/components/schemas/Trip'}
+        driver:
+          type: object
+          properties:
+            id: {type: string}
+            fullName: {type: string}
+            phone: {type: string}
+        driverLocation: {$ref: '#/components/schemas/Coordinates'}
+        etaMinutes: {type: integer, minimum: 0, nullable: true}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR23
+  - FR24
+  - FR25
+  - FR26
+  - FR27
+  - FR28
+  - FR29
+  - FR30
+  - FR31
+  - FR32
+  - FR33
+  - FR52
+  - FR53
+  - FR54
+

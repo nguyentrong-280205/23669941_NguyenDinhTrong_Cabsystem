@@ -1,0 +1,179 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Fare & Payment API
+  version: 1.0.0
+  description: |
+    API tính cước, chọn phương thức thanh toán, xử lý thanh toán điện tử, retry và tra cứu giao dịch.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Fare
+  - name: Payment
+  - name: Payment Provider
+  - name: Operations
+
+paths:
+  /trips/{tripId}/fare:
+    get:
+      tags: [Fare]
+      summary: Xem cước chuyến
+      security: [{bearerAuth: []}]
+      x-fr: [FR34]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Fare
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Fare'}
+    post:
+      tags: [Fare]
+      summary: Tính cước cho Trip đã hoàn thành
+      security: [{bearerAuth: []}]
+      x-fr: [FR34]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      responses:
+        '201':
+          description: Fare được tạo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Fare'}
+        '409': {description: Trip chưa hoàn thành hoặc đã có Fare}
+  /trips/{tripId}/payment:
+    get:
+      tags: [Payment]
+      summary: Xem trạng thái thanh toán
+      security: [{bearerAuth: []}]
+      x-fr: [FR37]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Payment
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+    post:
+      tags: [Payment]
+      summary: Tạo yêu cầu thanh toán
+      security: [{bearerAuth: []}]
+      x-fr: [FR35, FR36]
+      parameters:
+        - {name: tripId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [method]
+              properties:
+                method: {type: string, enum: [CASH, ELECTRONIC]}
+      responses:
+        '201':
+          description: Payment được tạo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '409': {description: Trip/Fare chưa sẵn sàng thanh toán}
+  /payments/{paymentId}/retry:
+    post:
+      tags: [Payment]
+      summary: Xử lý lại thanh toán thất bại
+      security: [{bearerAuth: []}]
+      x-fr: [FR38]
+      parameters:
+        - {name: paymentId, in: path, required: true, schema: {type: string}}
+      responses:
+        '202': {description: Đã yêu cầu xử lý lại}
+        '409': {description: Giao dịch không ở trạng thái có thể retry}
+  /payments/webhook:
+    post:
+      tags: [Payment Provider]
+      summary: Nhận kết quả từ Payment Provider
+      security: []
+      x-fr: [FR36, FR37, FR38]
+      description: Endpoint tích hợp bên ngoài. Không xác nhận SUCCESS nếu chưa có kết quả xác nhận hợp lệ từ provider.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [providerTransactionId, status]
+              properties:
+                providerTransactionId: {type: string}
+                status: {type: string, enum: [SUCCESS, FAILED]}
+                paymentId: {type: string}
+                signature: {type: string}
+      responses:
+        '200': {description: Đã tiếp nhận kết quả}
+        '400': {description: Payload/signature không hợp lệ}
+  /operator/payments:
+    get:
+      tags: [Operations]
+      summary: Tra cứu giao dịch
+      security: [{bearerAuth: []}]
+      x-fr: [FR39, FR55]
+      parameters:
+        - {name: status, in: query, schema: {type: string}}
+        - {name: tripId, in: query, schema: {type: string}}
+        - {name: customerId, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Danh sách giao dịch
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Payment'}
+                  total: {type: integer}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Fare:
+      type: object
+      properties:
+        tripId: {type: string}
+        amount: {type: number, format: double}
+        currency: {type: string, example: VND}
+        calculatedAt: {type: string, format: date-time}
+    Payment:
+      type: object
+      properties:
+        id: {type: string}
+        tripId: {type: string}
+        method: {type: string, enum: [CASH, ELECTRONIC]}
+        status: {type: string, enum: [PENDING, SUCCESS, FAILED]}
+        amount: {type: number, format: double}
+        providerTransactionId: {type: string, nullable: true}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR34
+  - FR35
+  - FR36
+  - FR37
+  - FR38
+  - FR39
+  - FR44
+  - FR55
+

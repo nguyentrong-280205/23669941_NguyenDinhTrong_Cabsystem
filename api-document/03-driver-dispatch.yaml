@@ -1,0 +1,185 @@
+openapi: 3.0.3
+info:
+  title: CAB System - Driver & Dispatch API
+  version: 1.0.0
+  description: |
+    API cho trạng thái/vị trí Driver và các API nội bộ phục vụ tìm, lọc, xếp hạng, phân công Driver.
+    Thiết kế dựa trên các Functional Requirements của SRS.
+servers:
+  - url: /api/v1
+tags:
+  - name: Driver
+  - name: Dispatch
+
+paths:
+  /drivers/me/availability:
+    patch:
+      tags: [Driver]
+      summary: Cập nhật trạng thái sẵn sàng
+      security: [{bearerAuth: []}]
+      x-fr: [FR15]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [availability]
+              properties:
+                availability: {type: string, enum: [AVAILABLE, UNAVAILABLE]}
+      responses:
+        '200': {description: Cập nhật thành công}
+        '403': {description: Chỉ Driver được thực hiện}
+  /drivers/me/location:
+    put:
+      tags: [Driver]
+      summary: Cập nhật vị trí Driver
+      security: [{bearerAuth: []}]
+      x-fr: [FR11, FR28]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Coordinates'}
+      responses:
+        '204': {description: Vị trí được ghi nhận}
+  /driver/trip-offers:
+    get:
+      tags: [Driver]
+      summary: Xem các yêu cầu chuyến được gửi
+      security: [{bearerAuth: []}]
+      x-fr: [FR17, FR45]
+      responses:
+        '200':
+          description: Danh sách yêu cầu chuyến
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripOffer'
+  /driver/trip-offers/{offerId}/accept:
+    post:
+      tags: [Driver]
+      summary: Nhận chuyến
+      security: [{bearerAuth: []}]
+      x-fr: [FR21]
+      parameters:
+        - {name: offerId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Chuyến được nhận
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Trip'}
+        '409': {description: Yêu cầu đã hết hiệu lực hoặc đã được Driver khác nhận}
+  /driver/trip-offers/{offerId}/reject:
+    post:
+      tags: [Driver]
+      summary: Từ chối chuyến
+      security: [{bearerAuth: []}]
+      x-fr: [FR22]
+      parameters:
+        - {name: offerId, in: path, required: true, schema: {type: string}}
+      responses:
+        '204': {description: Đã từ chối; hệ thống tiếp tục tìm Driver khác}
+  /internal/dispatch/bookings/{bookingId}/search:
+    post:
+      tags: [Dispatch]
+      summary: Tìm và xếp hạng Driver phù hợp
+      security: [{bearerAuth: []}]
+      x-fr: [FR12, FR13, FR14, FR15, FR16]
+      description: API nội bộ của thành phần Dispatch; không dành cho Customer.
+      parameters:
+        - {name: bookingId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Danh sách Driver phù hợp theo thứ tự ưu tiên
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/DriverCandidate'}
+        '404': {description: Không tìm thấy Booking}
+  /internal/dispatch/bookings/{bookingId}/assign:
+    post:
+      tags: [Dispatch]
+      summary: Gửi yêu cầu nhận chuyến cho Driver kế tiếp
+      security: [{bearerAuth: []}]
+      x-fr: [FR17, FR18, FR19]
+      description: API nội bộ; được gọi khi Driver từ chối, không phản hồi hoặc mất kết nối.
+      parameters:
+        - {name: bookingId, in: path, required: true, schema: {type: string}}
+      responses:
+        '202': {description: Đã gửi yêu cầu cho Driver phù hợp tiếp theo}
+        '409': {description: Không còn Driver phù hợp}
+  /internal/dispatch/bookings/{bookingId}/no-driver:
+    post:
+      tags: [Dispatch]
+      summary: Đánh dấu không tìm được Driver
+      security: [{bearerAuth: []}]
+      x-fr: [FR20]
+      parameters:
+        - {name: bookingId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Booking được cập nhật trạng thái NO_DRIVER_FOUND}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Coordinates:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: {type: number, format: double}
+        longitude: {type: number, format: double}
+    Trip:
+      type: object
+      properties:
+        id: {type: string}
+        bookingId: {type: string}
+        driverId: {type: string}
+        status: {type: string}
+    TripOffer:
+      type: object
+      properties:
+        id: {type: string}
+        bookingId: {type: string}
+        pickup: {type: string}
+        destination: {type: string}
+        vehicleTypeId: {type: string}
+        expiresAt: {type: string, format: date-time}
+    DriverCandidate:
+      type: object
+      properties:
+        driverId: {type: string}
+        vehicleId: {type: string}
+        distanceToPickupMeters: {type: number}
+        score: {type: number}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        details: {type: object, additionalProperties: true}
+x-fr-traceability:
+  - FR11
+  - FR12
+  - FR13
+  - FR14
+  - FR15
+  - FR16
+  - FR17
+  - FR18
+  - FR19
+  - FR20
+  - FR21
+  - FR22
+  - FR28
+  - FR45
+
