@@ -488,18 +488,6 @@ Bước 7: phân rã yêu cầu chức năng
 
 ---
 
-## 7.21. Các FR loại bỏ/tránh trùng
-
-| FR cũ | Vấn đề | Cách sửa |
-|---|---|---|
-| FR39 cũ | "Tra cứu giao dịch" bị trùng với FR55 | Chuyển FR39 sang "Tạo đánh giá tài xế" |
-| FR54 | "Tra cứu lịch sử chuyến" Operator | Không bỏ; giữ cho chức năng quản trị nếu hệ thống vẫn cần Operator tra cứu lịch sử. |
-| FR55 | "Tra cứu giao dịch" | Giữ và gắn cho UC17 |
-| FR56 | Xác thực người dùng | Dùng chung cho UC02 và các UC yêu cầu đăng nhập |
-| FR57 | Kiểm soát quyền | Đưa vào UC03 và dùng chung cho các UC có phân quyền |
-| FR58 | Bảo vệ dữ liệu | Yêu cầu dùng chung |
-| FR59 | Audit Log | Gắn riêng UC18 |
-| FR60–62 | Mới | Dùng cho UC19 – Xem báo cáo |
 
 Bước 8: Business Rules & exceptions (Những quy tắc nghiệp vụ và ngoại lệ)
 # 8. Business Rules & Exceptions
