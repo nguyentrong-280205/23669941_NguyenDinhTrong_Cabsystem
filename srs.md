@@ -655,123 +655,171 @@ pie title Phân bổ Business Requirements
 
 Hệ thống giữ nguyên **13 Business Process** để bảo đảm khả năng truy xuất yêu cầu từ nghiệp vụ đến FR, Use Case và Acceptance Criteria. Cấu trúc trình bày được chia nhỏ tương tự bài tham khảo, nhưng nội dung vẫn theo đúng CAB System của dự án.
 
-### 1.7.1 Sơ đồ quy trình tổng thể theo 4 giai đoạn
+### 1.7.1 Sơ đồ Quy trình Tổng thể (End-to-End Business Flow)
 
 Quy trình end-to-end của CAB System được chia thành **4 giai đoạn nghiệp vụ chính**:
 
-#### Giai đoạn 1 – Đặt xe
+1. **Giai đoạn 1 – Đặt xe & phân công tài xế**
+2. **Giai đoạn 2 – Thực hiện chuyến đi**
+3. **Giai đoạn 3 – Tính cước & thanh toán**
+4. **Giai đoạn 4 – Đánh giá & hoàn tất**
 
-**Mục tiêu:** tiếp nhận yêu cầu của khách hàng và tìm được tài xế phù hợp.
+```mermaid
+sequenceDiagram
+    autonumber
 
-```text
-Khách hàng đăng nhập
-→ Nhập điểm đón
-→ Nhập điểm đến
-→ Chọn loại xe
-→ Tạo Booking
-→ Hệ thống tìm tài xế
-→ Tạo DriverOffer
-→ Tài xế nhận/từ chối
-→ Driver ACCEPT
-→ Tạo Trip
+    actor C as Khách hàng
+    participant S as Hệ thống CAB
+    actor D as Tài xế
+    participant P as Cổng thanh toán
+
+    rect rgb(255, 246, 173)
+        Note over C,D: GIAI ĐOẠN 1: ĐẶT XE & PHÂN CÔNG TÀI XẾ
+
+        C->>S: Nhập điểm đón, điểm đến, chọn loại xe
+        S-->>C: Hiển thị thông tin đặt xe
+
+        C->>S: Xác nhận đặt xe
+        S->>S: Tạo Booking
+        S->>S: Tìm tài xế AVAILABLE phù hợp
+
+        S->>D: Gửi DriverOffer
+
+        alt Tài xế chấp nhận
+            D->>S: ACCEPT
+            S->>S: Gán tài xế cho Booking
+            S->>S: Chuyển Driver sang BUSY
+            S->>S: Tạo Trip
+            S-->>C: Thông báo tài xế đã nhận chuyến
+        else Tài xế từ chối
+            D-->>S: REJECT
+            S->>S: Chuyển DriverOffer sang REJECTED
+            S->>S: Chọn tài xế tiếp theo
+        else Hết thời gian phản hồi
+            S->>S: Chuyển DriverOffer sang TIMEOUT
+            S->>S: Chọn tài xế tiếp theo
+        end
+    end
+
+    rect rgb(211, 238, 255)
+        Note over C,D: GIAI ĐOẠN 2: THỰC HIỆN CHUYẾN ĐI
+
+        D->>S: Cập nhật DRIVER_ARRIVING
+        S-->>C: Hiển thị tài xế đang đến
+
+        D->>S: Cập nhật DRIVER_ARRIVED
+        S-->>C: Thông báo tài xế đã đến
+
+        D->>S: Cập nhật PICKED_UP
+        S-->>C: Cập nhật trạng thái đã đón khách
+
+        D->>S: Cập nhật IN_PROGRESS
+        S-->>C: Cập nhật trạng thái đang thực hiện chuyến
+
+        loop Trong quá trình chuyến đi
+            D->>S: Gửi vị trí GPS
+            S-->>C: Hiển thị vị trí tài xế và ETA
+        end
+
+        D->>S: Cập nhật COMPLETED
+        S-->>C: Thông báo chuyến đi hoàn thành
+    end
+
+    rect rgb(221, 255, 221)
+        Note over C,P: GIAI ĐOẠN 3: TÍNH CƯỚC & THANH TOÁN
+
+        S->>S: Lấy PricingRule có hiệu lực
+        S->>S: Tính Fare
+        S-->>C: Hiển thị số tiền cần thanh toán
+
+        C->>S: Chọn phương thức thanh toán
+
+        alt Thanh toán tiền mặt
+            S->>S: Tạo Payment với phương thức CASH
+            S-->>C: Ghi nhận thanh toán tiền mặt
+        else Thanh toán điện tử
+            S->>S: Tạo Payment và idempotencyKey
+            S->>P: Gửi yêu cầu thanh toán
+            P-->>S: Trả kết quả giao dịch
+
+            alt Thanh toán thành công
+                S->>S: Payment chuyển SUCCESS
+                S-->>C: Thông báo thanh toán thành công
+            else Thanh toán thất bại
+                S->>S: Payment chuyển FAILED
+                S-->>C: Thông báo thanh toán thất bại
+            else Cổng thanh toán chưa phản hồi
+                S->>S: Payment giữ PENDING / PROCESSING
+                S-->>C: Thông báo giao dịch đang được xử lý
+            end
+        end
+    end
+
+    rect rgb(241, 224, 255)
+        Note over C,D: GIAI ĐOẠN 4: ĐÁNH GIÁ & HOÀN TẤT
+
+        S-->>C: Yêu cầu đánh giá tài xế
+        C->>S: Gửi số sao và nhận xét
+        S->>S: Kiểm tra Trip và quyền đánh giá
+        S->>S: Lưu Rating
+        S->>S: Cập nhật điểm đánh giá tài xế
+        S->>S: Chuyển Driver sang AVAILABLE nếu vẫn online
+        S-->>C: Hoàn tất quy trình chuyến đi
+    end
 ```
 
-**Business Process tham gia:** BP-01, BP-02, BP-03, BP-04, BP-09, BP-12.
+#### Giai đoạn 1 – Đặt xe & phân công tài xế
+
+Khách hàng nhập điểm đón, điểm đến và loại xe mong muốn. Hệ thống tạo Booking, tìm các tài xế đang ở trạng thái `AVAILABLE`, lọc theo loại xe và khoảng cách, sau đó gửi `DriverOffer`.
+
+Nếu tài xế chấp nhận, hệ thống gán tài xế cho Booking, chuyển tài xế sang `BUSY` và tạo Trip. Nếu tài xế từ chối hoặc hết thời gian phản hồi, hệ thống tiếp tục tìm tài xế phù hợp tiếp theo.
 
 #### Giai đoạn 2 – Thực hiện chuyến đi
 
-**Mục tiêu:** đưa khách hàng từ điểm đón đến điểm đến và cập nhật trạng thái/vị trí liên tục.
+Sau khi Trip được tạo, tài xế lần lượt cập nhật các trạng thái:
 
 ```text
-Trip ASSIGNED
+ASSIGNED
 → DRIVER_ARRIVING
 → DRIVER_ARRIVED
 → PICKED_UP
 → IN_PROGRESS
-→ Cập nhật GPS
-→ Customer theo dõi vị trí/ETA
 → COMPLETED
 ```
 
-**Business Process tham gia:** BP-02, BP-05, BP-06, BP-09, BP-11, BP-12.
+Trong quá trình thực hiện chuyến, tài xế gửi vị trí GPS về hệ thống. Khách hàng có thể theo dõi trạng thái chuyến, vị trí tài xế và ETA nếu dịch vụ bản đồ khả dụng.
 
-#### Giai đoạn 3 – Thanh toán
+#### Giai đoạn 3 – Tính cước & thanh toán
 
-**Mục tiêu:** tính đúng cước và ghi nhận giao dịch thanh toán.
+Sau khi Trip chuyển sang `COMPLETED`, hệ thống lấy `PricingRule` phù hợp để tính Fare.
 
-```text
-Trip COMPLETED
-→ Lấy PricingRule
-→ Tính Fare
-→ Khách hàng chọn phương thức thanh toán
-→ CASH hoặc ELECTRONIC
-→ Xử lý Payment
-→ SUCCESS / FAILED / PENDING
-→ Thông báo kết quả
-```
+Khách hàng lựa chọn:
 
-**Business Process tham gia:** BP-07, BP-08, BP-09, BP-11, BP-12.
+- **Thanh toán tiền mặt**
+- **Thanh toán điện tử**
 
-#### Giai đoạn 4 – Đánh giá và hoàn tất
+Đối với thanh toán điện tử, hệ thống gửi yêu cầu tới Cổng thanh toán và cập nhật trạng thái Payment theo kết quả trả về.
 
-**Mục tiêu:** thu thập phản hồi, hoàn tất vòng đời chuyến và đưa dữ liệu vào báo cáo.
+Các trạng thái Payment chính:
 
 ```text
-Payment/Trip hoàn tất
-→ Customer đánh giá tài xế
-→ Lưu Rating
-→ Cập nhật chỉ số liên quan
-→ Driver sẵn sàng nhận chuyến mới
-→ Dữ liệu được tổng hợp vào báo cáo
+PENDING
+→ PROCESSING
+→ SUCCESS
+
+hoặc
+
+PROCESSING
+→ FAILED
 ```
 
-**Business Process tham gia:** BP-02, BP-10, BP-12, BP-13.
+#### Giai đoạn 4 – Đánh giá & hoàn tất
 
-#### Sơ đồ tổng thể 4 giai đoạn
+Sau khi chuyến đi hoàn thành, khách hàng có thể đánh giá tài xế từ **1 đến 5 sao** và nhập nhận xét.
 
-```mermaid
-flowchart LR
-    subgraph G1["GIAI ĐOẠN 1 - ĐẶT XE"]
-        A1[Đăng nhập]
-        A2[Tạo Booking]
-        A3[Tìm tài xế]
-        A4[DriverOffer]
-        A5[Driver Accept]
-        A6[Tạo Trip]
-        A1 --> A2 --> A3 --> A4 --> A5 --> A6
-    end
+Hệ thống lưu Rating, cập nhật chỉ số đánh giá của tài xế và chuyển tài xế về `AVAILABLE` nếu tài xế vẫn đang trực tuyến.
 
-    subgraph G2["GIAI ĐOẠN 2 - THỰC HIỆN CHUYẾN ĐI"]
-        B1[Đang đến điểm đón]
-        B2[Đã đến]
-        B3[Đã đón khách]
-        B4[Đang di chuyển]
-        B5[Theo dõi GPS/ETA]
-        B6[Hoàn thành]
-        B1 --> B2 --> B3 --> B4 --> B5 --> B6
-    end
-
-    subgraph G3["GIAI ĐOẠN 3 - THANH TOÁN"]
-        C1[Tính cước]
-        C2[Chọn phương thức]
-        C3[Xử lý thanh toán]
-        C4[Kết quả giao dịch]
-        C1 --> C2 --> C3 --> C4
-    end
-
-    subgraph G4["GIAI ĐOẠN 4 - ĐÁNH GIÁ VÀ HOÀN TẤT"]
-        D1[Đánh giá tài xế]
-        D2[Lưu Rating]
-        D3[Driver sẵn sàng]
-        D4[Tổng hợp báo cáo]
-        D1 --> D2 --> D3 --> D4
-    end
-
-    A6 --> B1
-    B6 --> C1
-    C4 --> D1
-```
-
+Dữ liệu của Booking, Trip, Fare, Payment và Rating sau đó được sử dụng cho chức năng báo cáo và thống kê.
 ---
 
 ### 1.7.2 BP-01: Quy trình tài khoản và truy cập
