@@ -2,7 +2,7 @@
 
 ## CAB System – Nền tảng đặt xe trực tuyến
 
-**Document Version:** 3.0  
+**Document Version:** 5.0 – 13 Business Processes Revision  
 **Date:** 2026-09-29  
 **Author:** Nguyễn Đình Trọng – 23669941  
 **Project Timeline:** 7 tuần  
@@ -17,9 +17,36 @@
    - 1.2 [Business Problem (Vấn đề nghiệp vụ)](#12-business-problem-vấn-đề-nghiệp-vụ)
    - 1.3 [Stakeholders (Các bên liên quan)](#13-stakeholders-các-bên-liên-quan)
    - 1.4 [Business Goals (Mục tiêu nghiệp vụ)](#14-business-goals-mục-tiêu-nghiệp-vụ)
-   - 1.5 [Phạm vi hệ thống (Scope)](#15-phạm-vi-hệ-thống-scope)
-   - 1.6 [Business Requirements (Yêu cầu nghiệp vụ)](#16-business-requirements-yêu-cầu-nghiệp-vụ)
-   - 1.7 [Business Processes (Quy trình nghiệp vụ)](#17-business-processes-quy-trình-nghiệp-vụ)
+   - 1.5 [Phạm vi hệ thống](#15-phạm-vi-hệ-thống)
+     - 1.5.1 [Trong phạm vi – Giai đoạn MVP](#151-trong-phạm-vi--giai-đoạn-mvp)
+     - 1.5.2 [Ngoài phạm vi – Giai đoạn MVP](#152-ngoài-phạm-vi--giai-đoạn-mvp)
+     - 1.5.3 [Ranh giới hệ thống](#153-ranh-giới-hệ-thống)
+   - 1.6 [Yêu cầu nghiệp vụ](#16-business-requirements-yêu-cầu-nghiệp-vụ)
+     - 1.6.1 [Quản lý tài khoản & Xác thực](#161-quản-lý-tài-khoản--xác-thực)
+     - 1.6.2 [Đặt xe & Quản lý Booking](#162-đặt-xe--quản-lý-booking)
+     - 1.6.3 [Quản lý tài xế & Phương tiện](#163-quản-lý-tài-xế--phương-tiện)
+     - 1.6.4 [Tìm & Phân công tài xế](#164-tìm--phân-công-tài-xế)
+     - 1.6.5 [Quản lý chuyến đi & Theo dõi](#165-quản-lý-chuyến-đi--theo-dõi)
+     - 1.6.6 [Tính cước & Thanh toán](#166-tính-cước--thanh-toán)
+     - 1.6.7 [Thông báo](#167-thông-báo)
+     - 1.6.8 [Đánh giá & Phản hồi](#168-đánh-giá--phản-hồi)
+     - 1.6.9 [Quản trị, Báo cáo & Bảo mật](#169-quản-trị-báo-cáo--bảo-mật)
+     - 1.6.10 [Tổng hợp yêu cầu nghiệp vụ](#1610-tổng-hợp-business-requirements)
+   - 1.7 [Quy trình nghiệp vụ](#17-quy-trình-nghiệp-vụ)
+     - 1.7.1 [Sơ đồ quy trình tổng thể theo 4 giai đoạn](#171-sơ-đồ-quy-trình-tổng-thể-theo-4-giai-đoạn)
+     - 1.7.2 [BP-01: Tài khoản và truy cập](#172-bp-01-quy-trình-tài-khoản-và-truy-cập)
+     - 1.7.3 [BP-02: Quản lý trạng thái hoạt động của tài xế](#173-bp-02-quy-trình-quản-lý-trạng-thái-hoạt-động-của-tài-xế)
+     - 1.7.4 [BP-03: Đặt xe](#174-bp-03-quy-trình-đặt-xe)
+     - 1.7.5 [BP-04: Tìm và phân công tài xế](#175-bp-04-quy-trình-tìm-và-phân-công-tài-xế)
+     - 1.7.6 [BP-05: Thực hiện chuyến đi](#176-bp-05-quy-trình-thực-hiện-chuyến-đi)
+     - 1.7.7 [BP-06: Theo dõi chuyến đi](#177-bp-06-quy-trình-theo-dõi-chuyến-đi)
+     - 1.7.8 [BP-07: Tính cước](#178-bp-07-quy-trình-tính-cước)
+     - 1.7.9 [BP-08: Thanh toán](#179-bp-08-quy-trình-thanh-toán)
+     - 1.7.10 [BP-09: Thông báo](#1710-bp-09-quy-trình-thông-báo)
+     - 1.7.11 [BP-10: Đánh giá](#1711-bp-10-quy-trình-đánh-giá)
+     - 1.7.12 [BP-11: Vận hành hệ thống](#1712-bp-11-quy-trình-vận-hành-hệ-thống)
+     - 1.7.13 [BP-12: Bảo mật và nhật ký kiểm toán](#1713-bp-12-quy-trình-bảo-mật-và-nhật-ký-kiểm-toán)
+     - 1.7.14 [BP-13: Báo cáo](#1714-bp-13-quy-trình-báo-cáo)
    - 1.8 [Các điểm chưa rõ cần xác nhận](#18-các-điểm-chưa-rõ-cần-xác-nhận)
 2. [Giai đoạn 2 – Phân rã yêu cầu chức năng](#giai-đoạn-2--phân-rã-yêu-cầu-chức-năng-functional-requirements-decomposition)
    - 2.1 [Cây phân rã chức năng](#21-cây-phân-rã-chức-năng-functional-decomposition-tree)
@@ -283,138 +310,775 @@ quadrantChart
 
 ---
 
-## 1.5 Phạm vi hệ thống (Scope)
+## 1.5 Phạm vi hệ thống
 
-### 1.5.1 In Scope – MVP
+### 1.5.1 Trong phạm vi – Giai đoạn MVP
 
-**Customer**
-- Đăng ký/đăng nhập.
-- Quản lý hồ sơ.
-- Đặt xe/hủy Booking.
-- Xem Driver/Vehicle/Trip/ETA.
-- Thanh toán.
-- Xem lịch sử Trip.
-- Rating.
+Hệ thống CAB MVP tập trung vào quy trình cốt lõi:
 
-**Driver**
-- Đăng ký/đăng nhập.
-- Quản lý hồ sơ.
-- Bật/tắt Availability.
-- Nhận/từ chối DriverOffer.
-- Cập nhật Trip State.
-- Cập nhật GPS.
+**Đặt xe → Tìm và phân công tài xế → Thực hiện chuyến đi → Tính cước → Thanh toán → Đánh giá**.
 
-**Operator/Admin**
-- Quản lý Customer.
-- Quản lý Driver.
-- Quản lý Vehicle/VehicleType.
-- Quản lý PricingRule theo quyền.
-- Giám sát Trip.
-- Tra cứu Payment.
-- Audit.
+#### A. Tác nhân tương tác với hệ thống
 
-**Giám đốc**
-- Xem báo cáo tổng hợp.
+| # | Tác nhân | Loại | Mô tả |
+|---|---|---|---|
+| 1 | **Khách hàng** | Chính – Bên ngoài | Đăng ký, đặt/hủy xe, theo dõi chuyến, thanh toán, đánh giá |
+| 2 | **Tài xế** | Chính – Bên ngoài | Quản lý trạng thái hoạt động, nhận/từ chối chuyến, thực hiện chuyến, cập nhật vị trí |
+| 3 | **Nhân viên vận hành** | Chính – Nội bộ | Quản lý khách hàng, tài xế, phương tiện, giám sát chuyến và tra cứu giao dịch |
+| 4 | **Quản trị viên** | Chính – Nội bộ | Quản trị tài khoản, phân quyền, cấu hình và nhật ký kiểm toán |
+| 5 | **Giám đốc** | Nội bộ – Ra quyết định | Xem báo cáo vận hành và kinh doanh |
+| 6 | **Cổng thanh toán** | Phụ trợ – Hệ thống ngoài | Xử lý thanh toán điện tử |
+| 7 | **Dịch vụ bản đồ/GPS** | Phụ trợ – Hệ thống ngoài | Geocoding, khoảng cách, tuyến đường, ETA |
+| 8 | **Dịch vụ thông báo** | Phụ trợ – Hệ thống ngoài | Gửi thông báo qua kênh được cấu hình |
 
-**External**
-- Map/GPS.
-- Payment Provider.
-- Notification Provider.
+#### B. Chức năng chi tiết theo từng phân hệ
 
-### 1.5.2 End-to-End Scope
+---
 
-```text
-Đăng nhập
-→ Tạo Booking
-→ Matching
-→ DriverOffer
-→ Driver Accept
-→ Tạo Trip
-→ Driver Arriving
-→ Driver Arrived
-→ Picked Up
-→ In Progress
-→ Completed
-→ Fare
-→ Payment
-→ Notification
-→ Rating
-→ Reporting
+**Phân hệ 1: Quản lý tài khoản và xác thực**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-01 | Đăng ký tài khoản | Khách hàng, Tài xế | Bắt buộc | Tạo tài khoản và hồ sơ tương ứng |
+| F-02 | Đăng nhập | Tất cả người dùng | Bắt buộc | Xác thực và truy cập theo vai trò |
+| F-03 | Cập nhật hồ sơ | Khách hàng, Tài xế | Bắt buộc | Sửa thông tin được phép |
+| F-04 | Quản lý vai trò/quyền | Quản trị viên | Bắt buộc | Phân quyền truy cập chức năng |
+| F-05 | Khóa/mở tài khoản | Nhân viên vận hành, Quản trị viên | Nên có | Thay đổi trạng thái tài khoản theo quyền |
+
+---
+
+**Phân hệ 2: Quản lý tài xế và phương tiện**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-06 | Quản lý hồ sơ tài xế | Tài xế, Nhân viên vận hành | Bắt buộc | Hồ sơ, giấy phép, xác minh |
+| F-07 | Bật/tắt trạng thái hoạt động | Tài xế | Bắt buộc | OFFLINE ↔ AVAILABLE; hệ thống tự BUSY khi có chuyến |
+| F-08 | Quản lý phương tiện | Tài xế, Nhân viên vận hành | Bắt buộc | Biển số, loại xe, trạng thái |
+| F-09 | Quản lý loại xe | Nhân viên vận hành, Quản trị viên | Bắt buộc | VehicleType phục vụ đặt xe/matching/pricing |
+| F-10 | Cập nhật vị trí GPS | Tài xế | Bắt buộc | Gửi vị trí phục vụ matching/tracking |
+
+---
+
+**Phân hệ 3: Đặt xe và quản lý Booking**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-11 | Nhập điểm đón | Khách hàng | Bắt buộc | Địa chỉ hoặc tọa độ hợp lệ |
+| F-12 | Nhập điểm đến | Khách hàng | Bắt buộc | Địa chỉ hoặc tọa độ hợp lệ |
+| F-13 | Chọn loại xe | Khách hàng | Bắt buộc | Chọn loại xe đang hoạt động |
+| F-14 | Tạo Booking | Khách hàng | Bắt buộc | Tạo yêu cầu đặt xe |
+| F-15 | Hủy Booking | Khách hàng | Bắt buộc | Hủy khi trạng thái/chính sách cho phép |
+| F-16 | Xem lịch sử chuyến | Khách hàng | Nên có | Xem các chuyến đã hoàn thành/hủy |
+
+---
+
+**Phân hệ 4: Tìm và phân công tài xế**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-17 | Tìm tài xế phù hợp | Hệ thống | Bắt buộc | Tìm Driver AVAILABLE |
+| F-18 | Lọc tài xế | Hệ thống | Bắt buộc | Theo xác minh, loại xe, vị trí |
+| F-19 | Xếp hạng tài xế | Hệ thống | Bắt buộc | Ưu tiên theo khoảng cách/tiêu chí |
+| F-20 | Tạo yêu cầu chuyến cho tài xế | Hệ thống | Bắt buộc | Tạo DriverOffer có thời hạn |
+| F-21 | Chấp nhận chuyến | Tài xế | Bắt buộc | Nhận chuyến khi Offer còn hiệu lực |
+| F-22 | Từ chối chuyến | Tài xế | Bắt buộc | Từ chối và chuyển Candidate |
+| F-23 | Xử lý hết thời gian phản hồi | Hệ thống | Bắt buộc | TIMEOUT và thử tài xế tiếp theo |
+| F-24 | Xử lý nhiều tài xế nhận đồng thời | Hệ thống | Bắt buộc | Chỉ một Driver được gán |
+
+---
+
+**Phân hệ 5: Quản lý và theo dõi chuyến đi**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-25 | Tạo chuyến đi | Hệ thống | Bắt buộc | Chỉ tạo sau Driver ACCEPT hợp lệ |
+| F-26 | Cập nhật trạng thái chuyến | Tài xế | Bắt buộc | Đang đến → Đã đến → Đã đón → Đang đi → Hoàn thành |
+| F-27 | Theo dõi trạng thái | Khách hàng | Bắt buộc | Xem state hiện tại |
+| F-28 | Theo dõi vị trí | Khách hàng | Bắt buộc | Xem vị trí Driver |
+| F-29 | Hiển thị ETA | Khách hàng | Nên có | ETA khi dịch vụ bản đồ khả dụng |
+| F-30 | Giám sát chuyến | Nhân viên vận hành | Bắt buộc | Xem các Trip active/problem |
+
+---
+
+**Phân hệ 6: Tính cước và thanh toán**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-31 | Cấu hình bảng giá | Quản trị viên/Nhân viên vận hành có quyền | Bắt buộc | Giá theo loại xe và thời gian hiệu lực |
+| F-32 | Tính cước tự động | Hệ thống | Bắt buộc | Tính Fare sau Trip COMPLETED |
+| F-33 | Lưu phiên bản bảng giá | Hệ thống | Bắt buộc | Truy vết rule dùng để tính Fare |
+| F-34 | Thanh toán tiền mặt | Khách hàng | Bắt buộc | Ghi nhận phương thức CASH |
+| F-35 | Thanh toán điện tử | Khách hàng | Nên có | Tích hợp cổng thanh toán |
+| F-36 | Xử lý thất bại/timeout | Hệ thống | Bắt buộc | Retry/reconcile theo chính sách |
+| F-37 | Chống xử lý giao dịch trùng | Hệ thống | Bắt buộc | Idempotency |
+
+---
+
+**Phân hệ 7: Thông báo**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-38 | Thông báo Booking | Khách hàng | Bắt buộc | Yêu cầu đặt xe được tiếp nhận |
+| F-39 | Thông báo có chuyến mới | Tài xế | Bắt buộc | Driver nhận DriverOffer |
+| F-40 | Thông báo tài xế nhận/đến | Khách hàng | Bắt buộc | Theo sự kiện của Trip |
+| F-41 | Thông báo hoàn thành | Khách hàng, Tài xế | Bắt buộc | Trip completed |
+| F-42 | Thông báo kết quả thanh toán | Khách hàng | Bắt buộc | Payment result |
+
+---
+
+**Phân hệ 8: Đánh giá và phản hồi**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-43 | Đánh giá tài xế | Khách hàng | Bắt buộc | 1–5 sao và nhận xét |
+| F-44 | Xem điểm đánh giá | Khách hàng, Tài xế | Nên có | Hiển thị rating tổng hợp |
+
+---
+
+**Phân hệ 9: Quản trị, bảo mật và báo cáo**
+
+| # | Chức năng | Tác nhân | Ưu tiên | Mô tả |
+|---|---|---|---|---|
+| F-45 | Quản lý khách hàng | Nhân viên vận hành, Quản trị viên | Bắt buộc | Danh sách, chi tiết, khóa/mở |
+| F-46 | Quản lý tài xế | Nhân viên vận hành, Quản trị viên | Bắt buộc | Hồ sơ, xác minh, trạng thái |
+| F-47 | Quản lý phương tiện | Nhân viên vận hành, Quản trị viên | Bắt buộc | Vehicle/VehicleType |
+| F-48 | Tra cứu thanh toán | Nhân viên vận hành, Quản trị viên | Nên có | Tìm theo Trip/Payment/status |
+| F-49 | Nhật ký kiểm toán | Hệ thống, Quản trị viên | Bắt buộc | Lưu thao tác quan trọng |
+| F-50 | Báo cáo vận hành | Giám đốc | Nên có | Số chuyến, tỷ lệ trạng thái |
+| F-51 | Báo cáo tài chính | Giám đốc | Nên có | Fare/Payment/doanh thu |
+| F-52 | Báo cáo tài xế | Giám đốc | Có thể có | Hiệu quả tài xế |
+
+#### C. Tổng hợp phạm vi MVP
+
+| Thống kê | Số lượng |
+|---|---:|
+| Tác nhân chính | 5 |
+| Hệ thống/dịch vụ ngoài | 3 |
+| Phân hệ chức năng | 9 |
+| Chức năng mô tả ở mức phạm vi | 52 |
+| Business Process được giữ trong SRS | 13 |
+| Use Case | 19 |
+
+```mermaid
+pie title Phân bổ chức năng theo mức ưu tiên
+    "Bắt buộc" : 41
+    "Nên có" : 10
+    "Có thể có" : 1
 ```
 
-### 1.5.3 Out of Scope – MVP
+### 1.5.2 Ngoài phạm vi – Giai đoạn MVP
 
-- Ride sharing/carpool.
-- Multi-stop.
-- Scheduled ride nâng cao.
-- Surge pricing AI.
-- Wallet/loyalty.
-- Driver payout/commission đầy đủ.
-- Refund/chargeback automation toàn diện.
-- SOS integration chuyên dụng.
-- Fraud detection ML.
-- Multi-country tax/currency.
+Các nội dung dưới đây không thuộc MVP nhưng có thể xem xét ở phiên bản sau:
 
+| # | Tính năng | Lý do chưa đưa vào MVP | Giai đoạn dự kiến |
+|---|---|---|---|
+| OS-01 | Ứng dụng mobile native | MVP ưu tiên web/responsive hoặc client hiện có | Sau MVP |
+| OS-02 | Ride sharing/carpool | Tăng đáng kể độ phức tạp matching và pricing | Sau MVP |
+| OS-03 | Chuyến nhiều điểm dừng | Cần mở rộng Route/Trip/Fare | Sau MVP |
+| OS-04 | Đặt xe theo lịch nâng cao | Cần scheduler và reservation matching riêng | Sau MVP |
+| OS-05 | Surge pricing tự động | Cần rule/demand engine nâng cao | Sau MVP |
+| OS-06 | Ví nội bộ/điểm thưởng | Không thuộc luồng thanh toán cốt lõi | Sau MVP |
+| OS-07 | Driver payout/commission đầy đủ | Thuộc nghiệp vụ kế toán/đối soát mở rộng | Sau MVP |
+| OS-08 | Refund/chargeback tự động | Phụ thuộc sâu Payment Provider | Sau MVP |
+| OS-09 | SOS/emergency integration | Yêu cầu quy trình an toàn/chính sách riêng | Sau MVP |
+| OS-10 | Fraud detection bằng ML | Không cần cho MVP học thuật | Sau MVP |
+| OS-11 | Multi-country tax/currency | MVP chỉ cần phạm vi kinh doanh hiện tại | Sau MVP |
+
+### 1.5.3 Ranh giới hệ thống
+
+```mermaid
+flowchart TB
+    subgraph InScope["TRONG PHẠM VI CAB SYSTEM"]
+        subgraph Core["Chức năng cốt lõi"]
+            A1[Tài khoản & Xác thực]
+            A2[Tài xế & Phương tiện]
+            A3[Booking]
+            A4[Matching & DriverOffer]
+            A5[Trip & Theo dõi]
+            A6[Pricing & Fare]
+            A7[Payment]
+            A8[Thông báo]
+            A9[Đánh giá]
+            A10[Vận hành & Báo cáo]
+            A11[Nhật ký kiểm toán]
+        end
+    end
+
+    subgraph External["HỆ THỐNG BÊN NGOÀI"]
+        M[Dịch vụ bản đồ/GPS]
+        P[Cổng thanh toán]
+        N[Dịch vụ thông báo]
+    end
+
+    A3 --> M
+    A4 --> M
+    A5 --> M
+    A7 --> P
+    A8 --> N
+```
+
+**Nguyên tắc ranh giới**
+- CAB System chịu trách nhiệm về trạng thái nghiệp vụ và dữ liệu cốt lõi.
+- Dịch vụ bản đồ chỉ cung cấp dữ liệu vị trí/khoảng cách/ETA.
+- Cổng thanh toán xử lý dữ liệu thanh toán nhạy cảm; CAB không lưu CVV hoặc thông tin thẻ đầy đủ.
+- Dịch vụ thông báo chỉ thực hiện delivery; lỗi gửi thông báo không rollback Booking/Trip/Payment.
+- Việc chia microservice, API Gateway, Kafka/RabbitMQ và Docker Compose thuộc phần kiến trúc triển khai, không làm thay đổi business scope của SRS.
 ---
 
 ## 1.6 Business Requirements (Yêu cầu nghiệp vụ)
 
-| ID | Business Requirement | Mô tả |
+### 1.6.1 Quản lý tài khoản & Xác thực
+
+| Ký hiệu | Tên | Diễn giải |
 |---|---|---|
-| BR-01 | Account & Access | Đăng ký, đăng nhập, hồ sơ, RBAC |
-| BR-02 | Driver Availability | OFFLINE/AVAILABLE/BUSY/SUSPENDED |
-| BR-03 | Booking | Tạo và hủy Booking |
-| BR-04 | Matching | Tìm/lọc/xếp hạng Driver và DriverOffer |
-| BR-05 | Trip | Lifecycle chuyến |
-| BR-06 | Driver Location | Location phục vụ matching/tracking |
-| BR-07 | Tracking | Status + Driver + Vehicle + ETA |
-| BR-08 | Pricing & Fare | PricingRule + Fare |
-| BR-09 | Payment | Cash/electronic + idempotency |
-| BR-10 | Notification | Event-driven notification |
-| BR-11 | Rating | Customer đánh giá Driver |
-| BR-12 | Operations | Quản lý Customer/Driver/Vehicle/Trip/Payment |
-| BR-13 | Security & Audit | AuthN/AuthZ/privacy/audit |
-| BR-14 | Reporting | Dashboard và báo cáo |
+| BR-001 | Đăng ký tài khoản | Customer/Driver tạo tài khoản |
+| BR-002 | Đăng nhập | User hợp lệ xác thực để truy cập hệ thống |
+| BR-003 | Quản lý hồ sơ | User cập nhật dữ liệu được phép |
+| BR-004 | Phân quyền | Role/Permission kiểm soát chức năng |
+
+### 1.6.2 Đặt xe & Quản lý Booking
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-005 | Pickup/Destination | Chọn vị trí hợp lệ |
+| BR-006 | VehicleType | Chọn loại xe active |
+| BR-007 | Create Booking | Tạo Booking và bắt đầu matching |
+| BR-008 | Cancel Booking | Hủy khi policy/state cho phép |
+| BR-009 | Cancellation Consistency | Đồng bộ Booking/Trip/Offer/Driver |
+
+### 1.6.3 Quản lý tài xế & Phương tiện
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-010 | Driver Profile | Hồ sơ và verification |
+| BR-011 | Driver Availability | OFFLINE/AVAILABLE/BUSY/SUSPENDED |
+| BR-012 | Vehicle | Quản lý phương tiện |
+| BR-013 | VehicleType | Loại xe |
+| BR-014 | Driver Location | Vị trí phục vụ matching/tracking |
+
+### 1.6.4 Tìm & Phân công tài xế
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-015 | Candidate Search | Tìm Driver AVAILABLE |
+| BR-016 | Candidate Filter | Lọc verified/VehicleType |
+| BR-017 | Candidate Ranking | Xếp hạng Driver |
+| BR-018 | DriverOffer | Offer có thời hạn và history |
+| BR-019 | Reject/Timeout | Candidate tiếp theo |
+| BR-020 | Concurrent Accept | Chỉ một Driver thắng |
+| BR-021 | No Driver | Hết Candidate → NO_DRIVER_FOUND |
+
+### 1.6.5 Quản lý chuyến đi & Theo dõi
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-022 | Create Trip | Chỉ sau ACCEPT hợp lệ |
+| BR-023 | Trip Lifecycle | Theo State Model |
+| BR-024 | Tracking | Status + Driver + Vehicle + Location |
+| BR-025 | ETA | Từ Map/GPS Provider khi khả dụng |
+| BR-026 | Trip History | Customer xem lịch sử |
+
+### 1.6.6 Tính cước & Thanh toán
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-027 | PricingRule | Giá theo VehicleType và hiệu lực |
+| BR-028 | Fare | Tính tự động sau Trip COMPLETED |
+| BR-029 | Fare Traceability | Lưu rule/version/snapshot |
+| BR-030 | Payment Method | CASH/ELECTRONIC |
+| BR-031 | Payment Provider | Electronic qua provider ngoài |
+| BR-032 | Payment Failure | Retry/reconcile |
+| BR-033 | Payment Idempotency | Không xử lý giao dịch logic trùng |
+
+### 1.6.7 Thông báo
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-034 | Customer Notification | Booking/Driver/Trip/Payment events |
+| BR-035 | Driver Notification | Offer và thay đổi Trip |
+| BR-036 | Channel Extensibility | Dễ bổ sung Push/SMS/Email |
+
+### 1.6.8 Đánh giá & Phản hồi
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-037 | Rating | Customer đánh giá 1–5 sau Trip |
+| BR-038 | Rating Integrity | Một Rating/Trip, đúng ownership |
+
+### 1.6.9 Quản trị, Báo cáo & Bảo mật
+
+| Ký hiệu | Tên | Diễn giải |
+|---|---|---|
+| BR-039 | Customer Management | Quản lý Customer |
+| BR-040 | Driver Management | Quản lý Driver |
+| BR-041 | Vehicle Management | Quản lý Vehicle/VehicleType |
+| BR-042 | Trip Monitoring | Giám sát Trip |
+| BR-043 | Payment Lookup | Tra cứu Payment |
+| BR-044 | Reporting | Báo cáo vận hành/kinh doanh |
+| BR-045 | Authentication | Endpoint private phải xác thực |
+| BR-046 | Authorization | Kiểm tra quyền server-side |
+| BR-047 | Data Protection | Bảo vệ PII/location/payment |
+| BR-048 | Audit | Audit thao tác quan trọng |
+
+### 1.6.10 Tổng hợp Business Requirements
+
+```mermaid
+pie title Phân bổ Business Requirements
+    "Account & Auth" : 4
+    "Booking" : 5
+    "Driver & Vehicle" : 5
+    "Matching" : 7
+    "Trip & Tracking" : 5
+    "Fare & Payment" : 7
+    "Notification" : 3
+    "Rating" : 2
+    "Operations/Security/Reporting" : 10
+```
+
+**Ma trận Business Requirements → Business Goals**
+
+| Nhóm BR | Business Goals |
+|---|---|
+| BR-001–BR-004 | BG-01, BG-09, BG-12 |
+| BR-005–BR-009 | BG-01, BG-04, BG-05 |
+| BR-010–BR-014 | BG-05, BG-07 |
+| BR-015–BR-021 | BG-01, BG-04 |
+| BR-022–BR-026 | BG-05, BG-06 |
+| BR-027–BR-033 | BG-03, BG-06 |
+| BR-034–BR-036 | BG-08, BG-11 |
+| BR-037–BR-038 | BG-05 |
+| BR-039–BR-048 | BG-09, BG-10, BG-12 |
 
 ---
 
-## 1.7 Business Processes (Quy trình nghiệp vụ)
+## 1.7 Quy trình nghiệp vụ
 
-| ID | Business Process | BR liên quan |
-|---|---|---|
-| BP-01 | Account & Access | BR-01, BR-13 |
-| BP-02 | Driver Availability | BR-02 |
-| BP-03 | Booking | BR-03 |
-| BP-04 | Driver Matching | BR-04, BR-06 |
-| BP-05 | Trip Execution | BR-05 |
-| BP-06 | Tracking | BR-06, BR-07 |
-| BP-07 | Pricing & Fare | BR-08 |
-| BP-08 | Payment | BR-09 |
-| BP-09 | Notification | BR-10 |
-| BP-10 | Rating | BR-11 |
-| BP-11 | Operations | BR-12 |
-| BP-12 | Security & Audit | BR-13 |
-| BP-13 | Reporting | BR-14 |
+Hệ thống giữ nguyên **13 Business Process** để bảo đảm khả năng truy xuất yêu cầu từ nghiệp vụ đến FR, Use Case và Acceptance Criteria. Cấu trúc trình bày được chia nhỏ tương tự bài tham khảo, nhưng nội dung vẫn theo đúng CAB System của dự án.
 
-### BP-03 → BP-08: Quy trình nghiệp vụ cốt lõi
+### 1.7.1 Sơ đồ quy trình tổng thể theo 4 giai đoạn
+
+Quy trình end-to-end của CAB System được chia thành **4 giai đoạn nghiệp vụ chính**:
+
+#### Giai đoạn 1 – Đặt xe
+
+**Mục tiêu:** tiếp nhận yêu cầu của khách hàng và tìm được tài xế phù hợp.
+
+```text
+Khách hàng đăng nhập
+→ Nhập điểm đón
+→ Nhập điểm đến
+→ Chọn loại xe
+→ Tạo Booking
+→ Hệ thống tìm tài xế
+→ Tạo DriverOffer
+→ Tài xế nhận/từ chối
+→ Driver ACCEPT
+→ Tạo Trip
+```
+
+**Business Process tham gia:** BP-01, BP-02, BP-03, BP-04, BP-09, BP-12.
+
+#### Giai đoạn 2 – Thực hiện chuyến đi
+
+**Mục tiêu:** đưa khách hàng từ điểm đón đến điểm đến và cập nhật trạng thái/vị trí liên tục.
+
+```text
+Trip ASSIGNED
+→ DRIVER_ARRIVING
+→ DRIVER_ARRIVED
+→ PICKED_UP
+→ IN_PROGRESS
+→ Cập nhật GPS
+→ Customer theo dõi vị trí/ETA
+→ COMPLETED
+```
+
+**Business Process tham gia:** BP-02, BP-05, BP-06, BP-09, BP-11, BP-12.
+
+#### Giai đoạn 3 – Thanh toán
+
+**Mục tiêu:** tính đúng cước và ghi nhận giao dịch thanh toán.
+
+```text
+Trip COMPLETED
+→ Lấy PricingRule
+→ Tính Fare
+→ Khách hàng chọn phương thức thanh toán
+→ CASH hoặc ELECTRONIC
+→ Xử lý Payment
+→ SUCCESS / FAILED / PENDING
+→ Thông báo kết quả
+```
+
+**Business Process tham gia:** BP-07, BP-08, BP-09, BP-11, BP-12.
+
+#### Giai đoạn 4 – Đánh giá và hoàn tất
+
+**Mục tiêu:** thu thập phản hồi, hoàn tất vòng đời chuyến và đưa dữ liệu vào báo cáo.
+
+```text
+Payment/Trip hoàn tất
+→ Customer đánh giá tài xế
+→ Lưu Rating
+→ Cập nhật chỉ số liên quan
+→ Driver sẵn sàng nhận chuyến mới
+→ Dữ liệu được tổng hợp vào báo cáo
+```
+
+**Business Process tham gia:** BP-02, BP-10, BP-12, BP-13.
+
+#### Sơ đồ tổng thể 4 giai đoạn
+
+```mermaid
+flowchart LR
+    subgraph G1["GIAI ĐOẠN 1 - ĐẶT XE"]
+        A1[Đăng nhập]
+        A2[Tạo Booking]
+        A3[Tìm tài xế]
+        A4[DriverOffer]
+        A5[Driver Accept]
+        A6[Tạo Trip]
+        A1 --> A2 --> A3 --> A4 --> A5 --> A6
+    end
+
+    subgraph G2["GIAI ĐOẠN 2 - THỰC HIỆN CHUYẾN ĐI"]
+        B1[Đang đến điểm đón]
+        B2[Đã đến]
+        B3[Đã đón khách]
+        B4[Đang di chuyển]
+        B5[Theo dõi GPS/ETA]
+        B6[Hoàn thành]
+        B1 --> B2 --> B3 --> B4 --> B5 --> B6
+    end
+
+    subgraph G3["GIAI ĐOẠN 3 - THANH TOÁN"]
+        C1[Tính cước]
+        C2[Chọn phương thức]
+        C3[Xử lý thanh toán]
+        C4[Kết quả giao dịch]
+        C1 --> C2 --> C3 --> C4
+    end
+
+    subgraph G4["GIAI ĐOẠN 4 - ĐÁNH GIÁ VÀ HOÀN TẤT"]
+        D1[Đánh giá tài xế]
+        D2[Lưu Rating]
+        D3[Driver sẵn sàng]
+        D4[Tổng hợp báo cáo]
+        D1 --> D2 --> D3 --> D4
+    end
+
+    A6 --> B1
+    B6 --> C1
+    C4 --> D1
+```
+
+---
+
+### 1.7.2 BP-01: Quy trình tài khoản và truy cập
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Đăng ký, đăng nhập và quản lý truy cập người dùng |
+| **Tác nhân** | Khách hàng, Tài xế, Nhân viên vận hành, Quản trị viên, Giám đốc |
+| **Tiền điều kiện** | Người dùng có dữ liệu hợp lệ hoặc tài khoản đã tồn tại |
+| **Hậu điều kiện** | User/Profile được tạo hoặc phiên đăng nhập hợp lệ được cấp |
+| **BR liên quan** | BR-001 → BR-004 |
+| **FR liên quan** | FR01–FR04, FR56–FR59 |
+| **UC liên quan** | UC01, UC02, UC03 |
+
+**Luồng chính**
+1. Người dùng đăng ký hoặc mở màn hình đăng nhập.
+2. Hệ thống kiểm tra dữ liệu/credential.
+3. Kiểm tra trạng thái tài khoản.
+4. Xác định vai trò và quyền.
+5. Cấp quyền truy cập phù hợp.
+6. Các thay đổi quản trị quan trọng được ghi AuditLog.
+
+---
+
+### 1.7.3 BP-02: Quy trình quản lý trạng thái hoạt động của tài xế
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Xác định tài xế có sẵn sàng nhận chuyến hay không |
+| **Tác nhân** | Tài xế, Hệ thống, Nhân viên vận hành/Quản trị viên |
+| **Tiền điều kiện** | Driver hợp lệ, không bị SUSPENDED |
+| **Hậu điều kiện** | Driver có state OFFLINE/AVAILABLE/BUSY/SUSPENDED nhất quán |
+| **BR liên quan** | BR-010, BR-011, BR-014 |
+| **FR liên quan** | FR28, FR50, FR54 |
+| **UC liên quan** | UC06, UC07, UC14 |
+
+```text
+OFFLINE → AVAILABLE
+AVAILABLE → BUSY khi nhận chuyến
+BUSY → AVAILABLE/OFFLINE khi Trip kết thúc
+AVAILABLE/OFFLINE → SUSPENDED khi bị quản trị khóa
+```
+
+---
+
+### 1.7.4 BP-03: Quy trình đặt xe
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Tạo Booking hợp lệ từ yêu cầu Customer |
+| **Tác nhân** | Khách hàng, Hệ thống, Dịch vụ bản đồ/GPS |
+| **Tiền điều kiện** | Customer ACTIVE; VehicleType hoạt động |
+| **Hậu điều kiện** | Booking CREATED/SEARCHING_DRIVER hoặc CANCELLED |
+| **BR liên quan** | BR-005 → BR-009 |
+| **FR liên quan** | FR05–FR10, FR66, FR67 |
+| **UC liên quan** | UC04 |
+
+**Luồng chính**
+1. Customer chọn điểm đón.
+2. Chọn điểm đến.
+3. Chọn loại xe.
+4. Hệ thống chuẩn hóa tọa độ khi cần.
+5. Validate Booking.
+6. Customer xác nhận.
+7. Tạo Booking và chuyển `SEARCHING_DRIVER`.
+8. Kích hoạt BP-04.
+
+---
+
+### 1.7.5 BP-04: Quy trình tìm và phân công tài xế
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Tìm Driver phù hợp và tạo Trip sau khi Driver chấp nhận |
+| **Tác nhân** | Hệ thống, Tài xế, Dịch vụ bản đồ/GPS |
+| **Tiền điều kiện** | Booking SEARCHING_DRIVER |
+| **Hậu điều kiện** | Driver được gán + Trip được tạo, hoặc NO_DRIVER_FOUND |
+| **BR liên quan** | BR-015 → BR-021 |
+| **FR liên quan** | FR11–FR22, FR64, FR67 |
+| **UC liên quan** | UC05, UC06 |
 
 ```mermaid
 flowchart TD
-    B[Create Booking] --> M[Search Candidates]
-    M --> O[Send DriverOffer]
-    O -->|Reject/Timeout| M
-    O -->|Accept| T[Create Trip]
-    T --> A[Driver Arriving]
-    A --> AR[Driver Arrived]
-    AR --> PU[Picked Up]
-    PU --> IP[In Progress]
-    IP --> C[Completed]
-    C --> F[Calculate Fare]
-    F --> P[Payment]
-    P --> N[Notification]
-    C --> R[Rating]
+    A[SEARCHING_DRIVER] --> B[Tìm Driver AVAILABLE]
+    B --> C[Lọc theo loại xe / xác minh]
+    C --> D[Tính khoảng cách]
+    D --> E[Xếp hạng Candidate]
+    E --> F[Tạo DriverOffer]
+    F --> G{Phản hồi?}
+    G -- Từ chối --> H[REJECTED]
+    H --> E
+    G -- Hết thời gian --> I[TIMEOUT]
+    I --> E
+    G -- Chấp nhận --> J[Atomic assignment]
+    J --> K[Driver BUSY]
+    K --> L[Tạo Trip]
 ```
 
+---
+
+### 1.7.6 BP-05: Quy trình thực hiện chuyến đi
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Thực hiện chuyến đúng vòng đời nghiệp vụ |
+| **Tác nhân** | Tài xế, Hệ thống |
+| **Tiền điều kiện** | Trip ASSIGNED |
+| **Hậu điều kiện** | Trip COMPLETED hoặc CANCELLED |
+| **BR liên quan** | BR-022, BR-023 |
+| **FR liên quan** | FR23–FR27, FR54, FR66 |
+| **UC liên quan** | UC07 |
+
+```text
+ASSIGNED
+→ DRIVER_ARRIVING
+→ DRIVER_ARRIVED
+→ PICKED_UP
+→ IN_PROGRESS
+→ COMPLETED
+```
+
+Hệ thống từ chối mọi transition không hợp lệ.
+
+---
+
+### 1.7.7 BP-06: Quy trình theo dõi chuyến đi
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Cung cấp trạng thái, vị trí và ETA của Trip |
+| **Tác nhân** | Khách hàng, Tài xế, Hệ thống, Dịch vụ bản đồ/GPS, Nhân viên vận hành |
+| **Tiền điều kiện** | Trip tồn tại và actor có quyền xem |
+| **Hậu điều kiện** | Hiển thị dữ liệu mới nhất hoặc trạng thái degraded |
+| **BR liên quan** | BR-014, BR-024 → BR-026 |
+| **FR liên quan** | FR28–FR33, FR52, FR67 |
+| **UC liên quan** | UC08, UC16 |
+
+**Luồng chính**
+1. Driver gửi tọa độ.
+2. Hệ thống lưu vị trí mới nhất.
+3. Customer/Operator yêu cầu tracking.
+4. Hệ thống trả Trip state, Driver/Vehicle, location.
+5. Map Provider hỗ trợ tính ETA.
+6. Khi GPS/Map lỗi, hiển thị dữ liệu cuối và thời điểm cập nhật.
+
+---
+
+### 1.7.8 BP-07: Quy trình tính cước
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Tính Fare chính xác và có thể truy vết |
+| **Tác nhân** | Hệ thống, Quản trị viên/Nhân viên vận hành có quyền |
+| **Tiền điều kiện** | Trip COMPLETED |
+| **Hậu điều kiện** | Fare được tạo |
+| **BR liên quan** | BR-027 → BR-029 |
+| **FR liên quan** | FR34, FR63, FR68 |
+| **UC liên quan** | UC09, UC15 |
+
+```text
+Trip COMPLETED
+→ Xác định VehicleType
+→ Lấy PricingRule hiệu lực
+→ Đọc distance/duration
+→ Tính cước
+→ Áp dụng minimum/adjustment
+→ Lưu Fare + pricing version
+```
+
+---
+
+### 1.7.9 BP-08: Quy trình thanh toán
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Ghi nhận thanh toán Fare an toàn và nhất quán |
+| **Tác nhân** | Khách hàng, Hệ thống, Cổng thanh toán |
+| **Tiền điều kiện** | Fare tồn tại |
+| **Hậu điều kiện** | Payment SUCCESS/FAILED hoặc chờ reconcile |
+| **BR liên quan** | BR-030 → BR-033 |
+| **FR liên quan** | FR35–FR38, FR55, FR65 |
+| **UC liên quan** | UC10, UC17 |
+
+**Tiền mặt**
+```text
+Chọn CASH → Tạo Payment → Ghi nhận kết quả theo quy trình MVP
+```
+
+**Điện tử**
+```text
+Chọn ELECTRONIC
+→ Tạo Payment + idempotencyKey
+→ Gọi Provider
+→ PROCESSING
+→ Callback/Result
+→ SUCCESS / FAILED / PENDING-Reconcile
+```
+
+---
+
+### 1.7.10 BP-09: Quy trình thông báo
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Thông báo kịp thời các sự kiện quan trọng |
+| **Tác nhân** | Hệ thống, Khách hàng, Tài xế, Dịch vụ thông báo |
+| **Tiền điều kiện** | Có sự kiện và recipient hợp lệ |
+| **Hậu điều kiện** | Notification SENT/FAILED |
+| **BR liên quan** | BR-034 → BR-036 |
+| **FR liên quan** | FR40–FR45 |
+| **UC liên quan** | UC11 |
+
+**Sự kiện chính**
+- Booking được tiếp nhận.
+- DriverOffer mới.
+- Driver đã nhận chuyến.
+- Driver đã đến.
+- Trip hoàn thành.
+- Kết quả Payment.
+- Hủy chuyến/không tìm được tài xế khi cần.
+
+---
+
+### 1.7.11 BP-10: Quy trình đánh giá
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Thu thập phản hồi sau chuyến |
+| **Tác nhân** | Khách hàng, Hệ thống |
+| **Tiền điều kiện** | Trip COMPLETED thuộc Customer và chưa Rating |
+| **Hậu điều kiện** | Rating được lưu |
+| **BR liên quan** | BR-037, BR-038 |
+| **FR liên quan** | FR39 |
+| **UC liên quan** | UC12 |
+
+1. Customer chọn Trip đã hoàn thành.
+2. Nhập 1–5 sao và nhận xét tùy chọn.
+3. Hệ thống kiểm tra ownership và uniqueness.
+4. Lưu Rating.
+5. Cập nhật rating tổng hợp nếu sử dụng cache.
+
+---
+
+### 1.7.12 BP-11: Quy trình vận hành hệ thống
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Hỗ trợ bộ phận vận hành quản lý hệ thống hằng ngày |
+| **Tác nhân** | Nhân viên vận hành, Quản trị viên |
+| **Tiền điều kiện** | Actor đã xác thực và có quyền |
+| **Hậu điều kiện** | Dữ liệu/action vận hành được cập nhật hợp lệ |
+| **BR liên quan** | BR-039 → BR-043 |
+| **FR liên quan** | FR46–FR55 |
+| **UC liên quan** | UC13–UC17 |
+
+Bao gồm:
+- Quản lý Customer.
+- Quản lý Driver.
+- Quản lý Vehicle/VehicleType.
+- Giám sát Trip.
+- Hỗ trợ Trip lỗi.
+- Tra cứu Payment.
+- Các action nhạy cảm được chuyển sang BP-12 để audit.
+
+---
+
+### 1.7.13 BP-12: Quy trình bảo mật và nhật ký kiểm toán
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Bảo vệ dữ liệu và truy vết hành vi |
+| **Tác nhân** | Hệ thống, Quản trị viên, mọi actor được xác thực |
+| **Tiền điều kiện** | Có request/action cần bảo vệ hoặc audit |
+| **Hậu điều kiện** | Request được cho phép/từ chối đúng quyền; audit được lưu khi cần |
+| **BR liên quan** | BR-045 → BR-048 |
+| **FR liên quan** | FR56–FR59 |
+| **UC liên quan** | UC02, UC03, UC18 |
+
+**Nguyên tắc**
+1. Xác thực danh tính.
+2. Kiểm tra quyền server-side.
+3. Chỉ trả dữ liệu đúng phạm vi.
+4. Mask dữ liệu nhạy cảm trong log.
+5. Ghi actor, action, target, timestamp và correlationId khi khả dụng.
+
+---
+
+### 1.7.14 BP-13: Quy trình báo cáo
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Mục đích** | Cung cấp dữ liệu tổng hợp phục vụ quản lý và ra quyết định |
+| **Tác nhân** | Giám đốc; Nhân viên vận hành/Quản trị viên theo quyền |
+| **Tiền điều kiện** | Actor có quyền xem báo cáo |
+| **Hậu điều kiện** | Báo cáo được hiển thị theo bộ lọc và thời điểm dữ liệu |
+| **BR liên quan** | BR-044 |
+| **FR liên quan** | FR60–FR62, FR69 |
+| **UC liên quan** | UC19 |
+
+**Các chỉ số tối thiểu**
+- Số lượng chuyến.
+- Trạng thái/ tỷ lệ hoàn thành và hủy nếu có.
+- Fare/doanh thu.
+- Payment theo trạng thái/phương thức.
+- Số Customer.
+- Số Driver.
+- Dữ liệu theo khoảng thời gian.
 ---
 
 ## 1.8 Các điểm chưa rõ cần xác nhận
@@ -610,6 +1274,20 @@ graph TD
 | FR61 | Lọc báo cáo |
 | FR62 | KPI báo cáo |
 | FR69 | Report Data Integrity |
+
+### 2.2.9 Tổng hợp Functional Requirements
+
+| Phân hệ | FR |
+|---|---|
+| Account & Security | FR01–FR04, FR56–FR59 |
+| Booking | FR05–FR10, FR66–FR67 |
+| Driver & Matching | FR11–FR22, FR54, FR64 |
+| Trip & Tracking | FR23–FR33 |
+| Pricing & Fare | FR34, FR63, FR68 |
+| Payment | FR35–FR38, FR55, FR65 |
+| Notification & Rating | FR39–FR45 |
+| Operations | FR46–FR53 |
+| Reporting | FR60–FR62, FR69 |
 
 ---
 
@@ -1846,7 +2524,7 @@ AC phải:
 
 ## 7.2 Bảng tổng hợp Tiêu chí chấp nhận chi tiết theo từng Phân hệ chức năng
 
-### AC-ACCOUNT
+### 7.2.1 Account & Access
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -1857,7 +2535,7 @@ AC phải:
 | AC03.1 | User đã login | Update profile hợp lệ | Lưu dữ liệu |
 | AC03.2 | Admin có quyền | Đổi role/status | Lưu + Audit |
 
-### AC-BOOKING-MATCHING
+### 7.2.2 Booking & Matching
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -1872,7 +2550,7 @@ AC phải:
 | AC06.2 | Offer còn hạn | Driver ACCEPT | Offer ACCEPTED, Driver BUSY, Trip tạo |
 | AC06.3 | Offer hết hạn | Driver ACCEPT | Bị từ chối |
 
-### AC-TRIP-TRACKING
+### 7.2.3 Trip & Tracking
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -1883,7 +2561,7 @@ AC phải:
 | AC08.2 | GPS stale | Tracking | Hiển thị location cuối + timestamp |
 | AC08.3 | Map lỗi | Tracking | ETA unavailable, Trip không lỗi |
 
-### AC-FARE-PAYMENT
+### 7.2.4 Fare & Payment
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -1896,7 +2574,7 @@ AC phải:
 | AC10.4 | Callback trùng | Receive duplicate | Không xử lý logic trùng |
 | AC10.5 | Payment data | Persist | Không lưu CVV/full card secret |
 
-### AC-NOTIFICATION-RATING
+### 7.2.5 Notification & Rating
 
 | AC | Given | When | Then |
 |---|---|---|---|
@@ -1905,7 +2583,7 @@ AC phải:
 | AC12.1 | Trip COMPLETED thuộc Customer | Submit 1–5 | Lưu Rating |
 | AC12.2 | Đã rating | Submit lần 2 | Reject |
 
-### AC-OPERATIONS-AUDIT-REPORT
+### 7.2.6 Operations, Audit & Reporting
 
 | AC | Given | When | Then |
 |---|---|---|---|
