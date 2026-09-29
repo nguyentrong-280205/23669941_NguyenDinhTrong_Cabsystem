@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Driver & Dispatch API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API cho trạng thái/vị trí Driver và các API nội bộ phục vụ tìm, lọc, xếp hạng, phân công Driver.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -16,7 +18,7 @@ paths:
     patch:
       tags: [Driver]
       summary: Cập nhật trạng thái sẵn sàng
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR15]
       requestBody:
         required: true
@@ -29,12 +31,21 @@ paths:
                 availability: {type: string, enum: [AVAILABLE, UNAVAILABLE]}
       responses:
         '200': {description: Cập nhật thành công}
-        '403': {description: Chỉ Driver được thực hiện}
+        '403': {description: Chỉ Driver được thực hiện, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchDriversMeAvailability
+      x-roles:
+        - DRIVER
   /drivers/me/location:
     put:
       tags: [Driver]
       summary: Cập nhật vị trí Driver
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR11, FR28]
       requestBody:
         required: true
@@ -43,11 +54,26 @@ paths:
             schema: {$ref: '#/components/schemas/Coordinates'}
       responses:
         '204': {description: Vị trí được ghi nhận}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: putDriversMeLocation
+      x-roles:
+        - DRIVER
   /driver/trip-offers:
     get:
       tags: [Driver]
       summary: Xem các yêu cầu chuyến được gửi
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR17, FR45]
       responses:
         '200':
@@ -58,11 +84,26 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TripOffer'
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getDriverTripOffers
+      x-roles:
+        - DRIVER
   /driver/trip-offers/{offerId}/accept:
     post:
       tags: [Driver]
       summary: Nhận chuyến
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR21]
       parameters:
         - {name: offerId, in: path, required: true, schema: {type: string}}
@@ -72,22 +113,54 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Trip'}
-        '409': {description: Yêu cầu đã hết hiệu lực hoặc đã được Driver khác nhận}
+        '409': {description: Yêu cầu đã hết hiệu lực hoặc đã được Driver khác nhận, content: {application/json: {schema: {
+                $ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postDriverTripOffersOfferIdAccept
+      x-roles:
+        - DRIVER
   /driver/trip-offers/{offerId}/reject:
     post:
       tags: [Driver]
       summary: Từ chối chuyến
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR22]
       parameters:
         - {name: offerId, in: path, required: true, schema: {type: string}}
       responses:
         '204': {description: Đã từ chối; hệ thống tiếp tục tìm Driver khác}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postDriverTripOffersOfferIdReject
+      x-roles:
+        - DRIVER
   /internal/dispatch/bookings/{bookingId}/search:
     post:
       tags: [Dispatch]
       summary: Tìm và xếp hạng Driver phù hợp
-      security: [{bearerAuth: []}]
+      security:
+        - serviceAuth: []
       x-fr: [FR12, FR13, FR14, FR15, FR16]
       description: API nội bộ của thành phần Dispatch; không dành cho Customer.
       parameters:
@@ -100,29 +173,55 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/DriverCandidate'}
-        '404': {description: Không tìm thấy Booking}
+        '404': {description: Không tìm thấy Booking, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postInternalDispatchBookingsBookingIdSearch
+      x-auth-context: SERVICE_TO_SERVICE
   /internal/dispatch/bookings/{bookingId}/assign:
     post:
       tags: [Dispatch]
       summary: Gửi yêu cầu nhận chuyến cho Driver kế tiếp
-      security: [{bearerAuth: []}]
+      security:
+        - serviceAuth: []
       x-fr: [FR17, FR18, FR19]
       description: API nội bộ; được gọi khi Driver từ chối, không phản hồi hoặc mất kết nối.
       parameters:
         - {name: bookingId, in: path, required: true, schema: {type: string}}
       responses:
         '202': {description: Đã gửi yêu cầu cho Driver phù hợp tiếp theo}
-        '409': {description: Không còn Driver phù hợp}
+        '409': {description: Không còn Driver phù hợp, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postInternalDispatchBookingsBookingIdAssign
+      x-auth-context: SERVICE_TO_SERVICE
   /internal/dispatch/bookings/{bookingId}/no-driver:
     post:
       tags: [Dispatch]
       summary: Đánh dấu không tìm được Driver
-      security: [{bearerAuth: []}]
+      security:
+        - serviceAuth: []
       x-fr: [FR20]
       parameters:
         - {name: bookingId, in: path, required: true, schema: {type: string}}
       responses:
         '200': {description: Booking được cập nhật trạng thái NO_DRIVER_FOUND}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postInternalDispatchBookingsBookingIdNoDriver
+      x-auth-context: SERVICE_TO_SERVICE
 
 components:
   securitySchemes:
@@ -130,6 +229,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT dành cho giao tiếp service-to-service; không sử dụng token của Customer/Driver.
   schemas:
     Coordinates:
       type: object
@@ -182,4 +286,3 @@ x-fr-traceability:
   - FR22
   - FR28
   - FR45
-

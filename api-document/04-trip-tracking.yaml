@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Trip & Tracking API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API cho nhận/trạng thái Trip, cập nhật vị trí, theo dõi và lịch sử chuyến.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -17,7 +19,7 @@ paths:
     get:
       tags: [Trip]
       summary: Xem thông tin Trip
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR23, FR29, FR30, FR56, FR57]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -27,12 +29,30 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Trip'}
-        '404': {description: Không tìm thấy Trip}
+        '404': {description: Không tìm thấy Trip, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getTripsTripId
+      x-roles:
+        - CUSTOMER
+        - DRIVER
+        - OPERATOR
+        - ADMIN
   /trips/{tripId}/status:
     patch:
       tags: [Trip]
       summary: Cập nhật trạng thái chuyến
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR23, FR24, FR25, FR26, FR27]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -51,12 +71,28 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Trip'}
-        '409': {description: Trình tự trạng thái không hợp lệ}
+        '409': {description: Trình tự trạng thái không hợp lệ, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchTripsTripIdStatus
+      x-roles:
+        - DRIVER
+        - OPERATOR
   /trips/{tripId}/location:
     put:
       tags: [Trip]
       summary: Cập nhật vị trí Driver trong Trip
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR28, FR31]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -67,12 +103,28 @@ paths:
             schema: {$ref: '#/components/schemas/Coordinates'}
       responses:
         '204': {description: Vị trí được ghi nhận}
-        '409': {description: Trip không ở trạng thái cho phép cập nhật vị trí}
+        '409': {description: Trip không ở trạng thái cho phép cập nhật vị trí, content: {application/json: {schema: {
+                  $ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: putTripsTripIdLocation
+      x-roles:
+        - DRIVER
   /trips/{tripId}/tracking:
     get:
       tags: [Tracking]
       summary: Theo dõi trạng thái, Driver, vị trí và ETA
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR29, FR30, FR31, FR32]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -83,12 +135,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripTracking'
-        '404': {description: Không tìm thấy Trip}
+        '404': {description: Không tìm thấy Trip, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getTripsTripIdTracking
+      x-roles:
+        - CUSTOMER
+        - OPERATOR
+        - ADMIN
   /trips/history:
     get:
       tags: [Trip]
       summary: Xem lịch sử chuyến
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR33, FR54]
       parameters:
         - {name: status, in: query, schema: {type: string}}
@@ -106,11 +175,27 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Trip'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getTripsHistory
+      x-roles:
+        - CUSTOMER
+        - DRIVER
   /operator/trips/active:
     get:
       tags: [Operations]
       summary: Theo dõi các Trip đang diễn ra
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR52, FR53]
       responses:
         '200':
@@ -120,11 +205,27 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Trip'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorTripsActive
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/trips/{tripId}/support:
     post:
       tags: [Operations]
       summary: Ghi nhận hỗ trợ xử lý Trip lỗi
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR53]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -139,7 +240,17 @@ paths:
                 note: {type: string}
       responses:
         '200': {description: Đã ghi nhận xử lý}
-        '403': {description: Không có quyền}
+        '403': {description: Không có quyền, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postOperatorTripsTripIdSupport
+      x-roles:
+        - OPERATOR
+        - ADMIN
 
 components:
   securitySchemes:
@@ -195,4 +306,5 @@ x-fr-traceability:
   - FR52
   - FR53
   - FR54
-
+  - FR56
+  - FR57

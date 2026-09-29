@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Notification API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API quản lý thông báo và tích hợp Notification Provider theo hướng có thể mở rộng kênh.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -16,7 +18,7 @@ paths:
     get:
       tags: [Notification]
       summary: Xem thông báo của người dùng
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
       parameters:
         - {name: status, in: query, schema: {type: string, enum: [PENDING, SENT, FAILED]}}
@@ -30,11 +32,29 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Notification'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getNotifications
+      x-roles:
+        - CUSTOMER
+        - DRIVER
+        - OPERATOR
+        - ADMIN
   /notifications/{notificationId}:
     get:
       tags: [Notification]
       summary: Xem chi tiết thông báo
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
       parameters:
         - {name: notificationId, in: path, required: true, schema: {type: string}}
@@ -44,11 +64,30 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Notification'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getNotificationsNotificationId
+      x-roles:
+        - CUSTOMER
+        - DRIVER
+        - OPERATOR
+        - ADMIN
   /internal/notifications:
     post:
       tags: [Notification]
       summary: Tạo và gửi thông báo theo sự kiện nghiệp vụ
-      security: [{bearerAuth: []}]
+      security:
+        - serviceAuth: []
       x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
       description: API nội bộ; lỗi Notification Provider không làm gián đoạn quy trình đặt/thực hiện chuyến.
       requestBody:
@@ -60,15 +99,25 @@ paths:
               required: [recipientId, event]
               properties:
                 recipientId: {type: string}
-                event: {type: string, enum: [BOOKING_RECEIVED, DRIVER_ASSIGNED, DRIVER_ARRIVED, TRIP_COMPLETED, PAYMENT_SUCCESS, PAYMENT_FAILED, NEW_TRIP]}
+                event: {type: string, enum: [BOOKING_RECEIVED, DRIVER_ASSIGNED, DRIVER_ARRIVED, TRIP_COMPLETED, 
+                        PAYMENT_SUCCESS, PAYMENT_FAILED, NEW_TRIP]}
                 data: {type: object, additionalProperties: true}
       responses:
         '202': {description: Notification được xếp hàng xử lý}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postInternalNotifications
+      x-auth-context: SERVICE_TO_SERVICE
   /internal/notifications/{notificationId}/delivery-result:
     post:
       tags: [Notification Provider]
       summary: Ghi nhận kết quả gửi từ Notification Provider
-      security: []
+      security:
+        - webhookAuth: []
       x-fr: [FR40, FR41, FR42, FR43, FR44, FR45]
       requestBody:
         required: true
@@ -84,6 +133,14 @@ paths:
         - {name: notificationId, in: path, required: true, schema: {type: string}}
       responses:
         '200': {description: Đã ghi nhận kết quả gửi}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postInternalNotificationsNotificationIdDeliveryResult
+      x-auth-context: PROVIDER_WEBHOOK
 
 components:
   securitySchemes:
@@ -91,6 +148,16 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT dành cho giao tiếp service-to-service; không sử dụng token của Customer/Driver.
+    webhookAuth:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
+      description: Chữ ký webhook do provider cấp; server phải xác minh chữ ký trước khi xử lý payload.
   schemas:
     Notification:
       type: object
@@ -114,4 +181,3 @@ x-fr-traceability:
   - FR43
   - FR44
   - FR45
-

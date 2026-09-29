@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Account API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API quản lý đăng ký, đăng nhập và thông tin cá nhân.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -36,8 +38,9 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/User'}
-        '409': {description: Số điện thoại/email đã tồn tại}
-        '422': {description: Thông tin không hợp lệ}
+        '409': {description: Số điện thoại/email đã tồn tại, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '422': {description: Thông tin không hợp lệ, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+      operationId: postAuthRegister
   /auth/login:
     post:
       tags: [Account]
@@ -64,12 +67,13 @@ paths:
                 properties:
                   accessToken: {type: string}
                   user: {$ref: '#/components/schemas/User'}
-        '401': {description: Thông tin đăng nhập không chính xác}
+        '401': {description: Thông tin đăng nhập không chính xác, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+      operationId: postAuthLogin
   /me:
     get:
       tags: [Account]
       summary: Xem thông tin tài khoản hiện tại
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR03, FR56, FR57]
       responses:
         '200':
@@ -77,10 +81,28 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/User'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getMe
+      x-roles:
+        - CUSTOMER
+        - DRIVER
+        - OPERATOR
+        - ADMIN
     patch:
       tags: [Account]
       summary: Cập nhật thông tin cá nhân
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR03, FR57, FR58]
       requestBody:
         required: true
@@ -98,7 +120,25 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/User'}
-        '422': {description: Thông tin không hợp lệ}
+        '422': {description: Thông tin không hợp lệ, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchMe
+      x-roles:
+        - CUSTOMER
+        - DRIVER
+        - OPERATOR
+        - ADMIN
 
 components:
   securitySchemes:
@@ -107,6 +147,40 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    User:
+      type: object
+      required:
+        - id
+        - role
+        - phone
+        - status
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        role:
+          type: string
+          enum:
+            - CUSTOMER
+            - DRIVER
+            - OPERATOR
+            - ADMIN
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - LOCKED
+        createdAt:
+          type: string
+          format: date-time
     Error:
       type: object
       required: [code, message]
@@ -118,8 +192,6 @@ x-fr-traceability:
   - FR01
   - FR02
   - FR03
-  - FR04
   - FR56
   - FR57
   - FR58
-

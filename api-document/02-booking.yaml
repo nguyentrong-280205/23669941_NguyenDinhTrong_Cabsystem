@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Booking API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API phục vụ nhập điểm đón/điểm đến, chọn loại xe, kiểm tra và tạo/hủy Booking.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -15,7 +17,7 @@ paths:
     get:
       tags: [Booking]
       summary: Danh sách loại xe
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR07]
       responses:
         '200':
@@ -25,11 +27,26 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/VehicleType'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getVehicleTypes
+      x-roles:
+        - CUSTOMER
   /bookings/validate:
     post:
       tags: [Booking]
       summary: Kiểm tra thông tin đặt xe
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR05, FR06, FR07, FR09]
       requestBody:
         required: true
@@ -50,12 +67,27 @@ paths:
                   errors:
                     type: array
                     items: {type: string}
-        '422': {description: Dữ liệu không hợp lệ}
+        '422': {description: Dữ liệu không hợp lệ, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postBookingsValidate
+      x-roles:
+        - CUSTOMER
   /bookings:
     post:
       tags: [Booking]
       summary: Tạo yêu cầu đặt xe
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR05, FR06, FR07, FR08, FR09]
       requestBody:
         required: true
@@ -68,11 +100,26 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Booking'}
-        '422': {description: Thiếu hoặc sai thông tin đặt xe}
+        '422': {description: Thiếu hoặc sai thông tin đặt xe, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postBookings
+      x-roles:
+        - CUSTOMER
     get:
       tags: [Booking]
       summary: Xem lịch sử yêu cầu đặt xe
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR03]
       parameters:
         - {name: status, in: query, schema: {type: string}}
@@ -90,11 +137,26 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Booking'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getBookings
+      x-roles:
+        - CUSTOMER
   /bookings/{bookingId}:
     get:
       tags: [Booking]
       summary: Xem chi tiết Booking
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR08, FR29, FR56, FR57]
       parameters:
         - {name: bookingId, in: path, required: true, schema: {type: string}}
@@ -104,18 +166,49 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Booking'}
-        '404': {description: Không tìm thấy Booking}
+        '404': {description: Không tìm thấy Booking, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getBookingsBookingId
+      x-roles:
+        - CUSTOMER
     delete:
       tags: [Booking]
       summary: Hủy yêu cầu đặt xe
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR10]
       parameters:
         - {name: bookingId, in: path, required: true, schema: {type: string}}
       responses:
         '204': {description: Hủy thành công}
-        '409': {description: Không thể hủy theo chính sách/trạng thái hiện tại}
-        '404': {description: Không tìm thấy Booking}
+        '409': {description: Không thể hủy theo chính sách/trạng thái hiện tại, content: {application/json: {schema: {
+                  $ref: '#/components/schemas/Error'}}}}
+        '404': {description: Không tìm thấy Booking, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: deleteBookingsBookingId
+      x-roles:
+        - CUSTOMER
 
 components:
   securitySchemes:
@@ -166,10 +259,13 @@ components:
         message: {type: string}
         details: {type: object, additionalProperties: true}
 x-fr-traceability:
+  - FR03
   - FR05
   - FR06
   - FR07
   - FR08
   - FR09
   - FR10
-
+  - FR29
+  - FR56
+  - FR57

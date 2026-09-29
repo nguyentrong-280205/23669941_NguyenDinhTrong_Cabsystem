@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Rating API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API đánh giá Driver sau khi Trip hoàn thành; SRS quy định điều kiện đánh giá trong Business Rule/UC10.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -15,8 +17,7 @@ paths:
     post:
       tags: [Rating]
       summary: Đánh giá Driver sau chuyến
-      security: [{bearerAuth: []}]
-      x-fr: []
+      security: [bearerAuth: []]
       description: Customer chỉ được đánh giá Trip đã hoàn thành và không đánh giá lại nếu chính sách không cho phép.
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -36,8 +37,27 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Rating'}
-        '409': {description: Trip chưa hoàn thành hoặc đã được đánh giá}
-        '422': {description: Điểm đánh giá không hợp lệ}
+        '409': {description: Trip chưa hoàn thành hoặc đã được đánh giá, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '422': {description: Điểm đánh giá không hợp lệ, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-uc:
+        - UC12
+      x-traceability-note: SRS hiện chưa có FR riêng cho UC12 Đánh giá Driver; không gán FR giả để tránh sai 
+        traceability.
+      operationId: postTripsTripIdRating
+      x-roles:
+        - CUSTOMER
 
 components:
   securitySchemes:
@@ -63,5 +83,7 @@ components:
         code: {type: string}
         message: {type: string}
         details: {type: object, additionalProperties: true}
-x-fr-traceability:
+x-fr-traceability: []
+x-uc-traceability:
+  - UC12
 

@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Operations & Security API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API quản trị Customer, Driver, Vehicle, Trip, phân quyền và Audit Log.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -20,7 +22,7 @@ paths:
     get:
       tags: [Customer Management]
       summary: Xem danh sách Customer
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR46, FR57]
       responses:
         '200':
@@ -34,11 +36,27 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Customer'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorCustomers
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/customers/{customerId}:
     get:
       tags: [Customer Management]
       summary: Xem thông tin Customer
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR47, FR57, FR58]
       parameters:
         - {name: customerId, in: path, required: true, schema: {type: string}}
@@ -48,11 +66,27 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Customer'}
-        '404': {description: Customer không tồn tại}
+        '404': {description: Customer không tồn tại, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorCustomersCustomerId
+      x-roles:
+        - OPERATOR
+        - ADMIN
     patch:
       tags: [Customer Management]
       summary: Cập nhật thông tin Customer
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR48, FR57, FR58]
       parameters:
         - {name: customerId, in: path, required: true, schema: {type: string}}
@@ -69,12 +103,22 @@ paths:
                 phone: {type: string}
       responses:
         '200': {description: Cập nhật thành công}
-        '403': {description: Không có quyền}
+        '403': {description: Không có quyền, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchOperatorCustomersCustomerId
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/customers/{customerId}/status:
     patch:
       tags: [Customer Management]
       summary: Khóa/Mở khóa tài khoản Customer
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR49, FR57, FR59]
       parameters:
         - {name: customerId, in: path, required: true, schema: {type: string}}
@@ -89,11 +133,27 @@ paths:
                 status: {type: string, enum: [ACTIVE, LOCKED]}
       responses:
         '200': {description: Trạng thái tài khoản được cập nhật}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchOperatorCustomersCustomerIdStatus
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/drivers:
     get:
       tags: [Driver Management]
       summary: Xem danh sách và thông tin Driver
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR50, FR57, FR58]
       responses:
         '200':
@@ -107,11 +167,27 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Driver'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorDrivers
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/drivers/{driverId}:
     get:
       tags: [Driver Management]
       summary: Xem thông tin Driver
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR50, FR57, FR58]
       parameters:
         - {name: driverId, in: path, required: true, schema: {type: string}}
@@ -121,10 +197,26 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Driver'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorDriversDriverId
+      x-roles:
+        - OPERATOR
+        - ADMIN
     patch:
       tags: [Driver Management]
       summary: Cập nhật thông tin/trạng thái Driver
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR50, FR57, FR59]
       parameters:
         - {name: driverId, in: path, required: true, schema: {type: string}}
@@ -139,11 +231,27 @@ paths:
                 availability: {type: string, enum: [AVAILABLE, UNAVAILABLE]}
       responses:
         '200': {description: Cập nhật thành công}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchOperatorDriversDriverId
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/vehicles:
     get:
       tags: [Vehicle Management]
       summary: Xem danh sách Vehicle
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR51, FR57]
       responses:
         '200':
@@ -153,10 +261,26 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Vehicle'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorVehicles
+      x-roles:
+        - OPERATOR
+        - ADMIN
     post:
       tags: [Vehicle Management]
       summary: Thêm Vehicle
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR51, FR57, FR59]
       requestBody:
         required: true
@@ -166,12 +290,72 @@ paths:
               $ref: '#/components/schemas/VehicleInput'
       responses:
         '201': {description: Vehicle được tạo}
-        '409': {description: Biển số xe đã tồn tại}
+        '409': {description: Biển số xe đã tồn tại, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postOperatorVehicles
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/vehicles/{vehicleId}:
+    get:
+      tags:
+        - Vehicle Management
+      summary: Xem chi tiết Vehicle
+      security:
+        - bearerAuth: []
+      x-fr:
+        - FR51
+        - FR57
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Vehicle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '404':
+          description: Vehicle không tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorVehiclesVehicleId
+      x-roles:
+        - OPERATOR
+        - ADMIN
     patch:
       tags: [Vehicle Management]
       summary: Cập nhật Vehicle
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR51, FR57, FR59]
       parameters:
         - {name: vehicleId, in: path, required: true, schema: {type: string}}
@@ -182,11 +366,27 @@ paths:
             schema: {$ref: '#/components/schemas/VehicleUpdate'}
       responses:
         '200': {description: Vehicle được cập nhật}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchOperatorVehiclesVehicleId
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/trips:
     get:
       tags: [Trip Operations]
       summary: Tra cứu lịch sử Trip
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR52, FR54, FR57]
       parameters:
         - {name: status, in: query, schema: {type: string}}
@@ -206,11 +406,27 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Trip'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorTrips
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /operator/roles:
     get:
       tags: [Access Control]
       summary: Xem vai trò/quyền
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR04, FR57]
       responses:
         '200':
@@ -221,11 +437,26 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorRoles
+      x-roles:
+        - ADMIN
   /operator/users/{userId}/role:
     patch:
       tags: [Access Control]
       summary: Cập nhật vai trò người dùng
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR04, FR57, FR59]
       parameters:
         - {name: userId, in: path, required: true, schema: {type: string}}
@@ -240,12 +471,21 @@ paths:
                 role: {type: string, enum: [CUSTOMER, DRIVER, OPERATOR, ADMIN]}
       responses:
         '200': {description: Vai trò được cập nhật}
-        '403': {description: Không có quyền quản lý phân quyền}
+        '403': {description: Không có quyền quản lý phân quyền, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: patchOperatorUsersUserIdRole
+      x-roles:
+        - ADMIN
   /operator/audit-logs:
     get:
       tags: [Audit]
       summary: Tra cứu Audit Log
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR59]
       parameters:
         - {name: actorId, in: query, schema: {type: string}}
@@ -265,11 +505,28 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/AuditLog'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorAuditLogs
+      x-roles:
+        - OPERATOR
+        - ADMIN
   /internal/audit-logs:
     post:
       tags: [Audit]
       summary: Ghi Audit Log cho thao tác quan trọng
-      security: [{bearerAuth: []}]
+      security:
+        - serviceAuth: []
       x-fr: [FR59]
       description: API nội bộ; các thao tác quản trị/quan trọng được ghi nhận để truy vết.
       requestBody:
@@ -280,6 +537,14 @@ paths:
               $ref: '#/components/schemas/AuditLogInput'
       responses:
         '201': {description: Audit Log được ghi nhận}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postInternalAuditLogs
+      x-auth-context: SERVICE_TO_SERVICE
 
 components:
   securitySchemes:
@@ -287,6 +552,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT dành cho giao tiếp service-to-service; không sử dụng token của Customer/Driver.
   schemas:
     Customer:
       type: object
@@ -376,11 +646,7 @@ x-fr-traceability:
   - FR50
   - FR51
   - FR52
-  - FR53
   - FR54
-  - FR55
-  - FR56
   - FR57
   - FR58
   - FR59
-

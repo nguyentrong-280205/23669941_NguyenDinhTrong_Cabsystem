@@ -1,10 +1,12 @@
 openapi: 3.0.3
 info:
   title: CAB System - Fare & Payment API
-  version: 1.0.0
-  description: |
+  version: 1.1.0
+  description: |-
     API tính cước, chọn phương thức thanh toán, xử lý thanh toán điện tử, retry và tra cứu giao dịch.
     Thiết kế dựa trên các Functional Requirements của SRS.
+
+    Chuẩn hóa v1.1: role authorization, error contract, traceability và security cho internal/webhook API.
 servers:
   - url: /api/v1
 tags:
@@ -18,7 +20,7 @@ paths:
     get:
       tags: [Fare]
       summary: Xem cước chuyến
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR34]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -28,10 +30,28 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Fare'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getTripsTripIdFare
+      x-roles:
+        - CUSTOMER
+        - DRIVER
+        - OPERATOR
+        - ADMIN
     post:
       tags: [Fare]
       summary: Tính cước cho Trip đã hoàn thành
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR34]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -41,12 +61,28 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Fare'}
-        '409': {description: Trip chưa hoàn thành hoặc đã có Fare}
+        '409': {description: Trip chưa hoàn thành hoặc đã có Fare, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postTripsTripIdFare
+      x-roles:
+        - DRIVER
+        - OPERATOR
   /trips/{tripId}/payment:
     get:
       tags: [Payment]
       summary: Xem trạng thái thanh toán
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR37]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -56,10 +92,27 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Payment'}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getTripsTripIdPayment
+      x-roles:
+        - CUSTOMER
+        - OPERATOR
+        - ADMIN
     post:
       tags: [Payment]
       summary: Tạo yêu cầu thanh toán
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR35, FR36]
       parameters:
         - {name: tripId, in: path, required: true, schema: {type: string}}
@@ -78,23 +131,55 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Payment'}
-        '409': {description: Trip/Fare chưa sẵn sàng thanh toán}
+        '409': {description: Trip/Fare chưa sẵn sàng thanh toán, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postTripsTripIdPayment
+      x-roles:
+        - CUSTOMER
   /payments/{paymentId}/retry:
     post:
       tags: [Payment]
       summary: Xử lý lại thanh toán thất bại
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR38]
       parameters:
         - {name: paymentId, in: path, required: true, schema: {type: string}}
       responses:
         '202': {description: Đã yêu cầu xử lý lại}
-        '409': {description: Giao dịch không ở trạng thái có thể retry}
+        '409': {description: Giao dịch không ở trạng thái có thể retry, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postPaymentsPaymentIdRetry
+      x-roles:
+        - CUSTOMER
+        - OPERATOR
   /payments/webhook:
     post:
       tags: [Payment Provider]
       summary: Nhận kết quả từ Payment Provider
-      security: []
+      security:
+        - webhookAuth: []
       x-fr: [FR36, FR37, FR38]
       description: Endpoint tích hợp bên ngoài. Không xác nhận SUCCESS nếu chưa có kết quả xác nhận hợp lệ từ provider.
       requestBody:
@@ -111,12 +196,20 @@ paths:
                 signature: {type: string}
       responses:
         '200': {description: Đã tiếp nhận kết quả}
-        '400': {description: Payload/signature không hợp lệ}
+        '400': {description: Payload/signature không hợp lệ, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: postPaymentsWebhook
+      x-auth-context: PROVIDER_WEBHOOK
   /operator/payments:
     get:
       tags: [Operations]
       summary: Tra cứu giao dịch
-      security: [{bearerAuth: []}]
+      security: [bearerAuth: []]
       x-fr: [FR39, FR55]
       parameters:
         - {name: status, in: query, schema: {type: string}}
@@ -136,6 +229,22 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Payment'}
                   total: {type: integer}
+        '401':
+          description: Thiếu, hết hạn hoặc không hợp lệ thông tin xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Đã xác thực nhưng không có quyền thực hiện thao tác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: getOperatorPayments
+      x-roles:
+        - OPERATOR
+        - ADMIN
 
 components:
   securitySchemes:
@@ -143,6 +252,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    webhookAuth:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
+      description: Chữ ký webhook do provider cấp; server phải xác minh chữ ký trước khi xử lý payload.
   schemas:
     Fare:
       type: object
@@ -174,6 +288,4 @@ x-fr-traceability:
   - FR37
   - FR38
   - FR39
-  - FR44
   - FR55
-
