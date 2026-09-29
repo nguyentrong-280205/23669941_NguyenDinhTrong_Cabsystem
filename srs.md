@@ -820,6 +820,7 @@ Sau khi chuyến đi hoàn thành, khách hàng có thể đánh giá tài xế 
 Hệ thống lưu Rating, cập nhật chỉ số đánh giá của tài xế và chuyển tài xế về `AVAILABLE` nếu tài xế vẫn đang trực tuyến.
 
 Dữ liệu của Booking, Trip, Fare, Payment và Rating sau đó được sử dụng cho chức năng báo cáo và thống kê.
+
 ---
 
 ### 1.7.2 BP-01: Quy trình tài khoản và truy cập
