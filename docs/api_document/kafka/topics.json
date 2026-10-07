@@ -1,0 +1,100 @@
+{
+  "description": "CAB topic registry đề xuất theo SRS 9.3; không phải Kafka server configuration hoặc AsyncAPI document.",
+  "topics": [
+    {
+      "name": "cab.booking.events",
+      "producer": "booking",
+      "partitionKey": "bookingId",
+      "schema": "booking.events.schema.json",
+      "consumerGroups": {
+        "booking.matching": [
+          "booking.created"
+        ],
+        "notification.events": [
+          "booking.created",
+          "offer.created",
+          "booking.canceled",
+          "booking.no-driver-found"
+        ]
+      },
+      "retentionHours": 168
+    },
+    {
+      "name": "cab.trip.events",
+      "producer": "trip",
+      "partitionKey": "tripId",
+      "schema": "trip.events.schema.json",
+      "consumerGroups": {
+        "booking.trip-status": [
+          "trip.canceled",
+          "trip.completed"
+        ],
+        "driver.trip-status": [
+          "trip.canceled",
+          "trip.completed"
+        ],
+        "notification.events": [
+          "driver.assigned",
+          "driver.arrived",
+          "trip.canceled",
+          "trip.completed"
+        ]
+      },
+      "retentionHours": 168
+    },
+    {
+      "name": "cab.payment.events",
+      "producer": "payment",
+      "partitionKey": "tripId",
+      "schema": "payment.events.schema.json",
+      "consumerGroups": {
+        "trip.payment-status": [
+          "payment.completed"
+        ],
+        "notification.events": [
+          "payment.completed",
+          "payment.failed",
+          "payment.processing"
+        ]
+      },
+      "retentionHours": 168
+    },
+    {
+      "name": "cab.driver.events",
+      "producer": "driver",
+      "partitionKey": "driverId",
+      "schema": "driver.events.schema.json",
+      "consumerGroups": {
+        "notification.events": [
+          "driver.application.reviewed"
+        ]
+      },
+      "retentionHours": 168
+    },
+    {
+      "name": "cab.identity.otp",
+      "producer": "identity",
+      "partitionKey": "challengeId",
+      "schema": "identity.events.schema.json",
+      "consumerGroups": {
+        "notification.otp": [
+          "otp.requested"
+        ]
+      },
+      "retentionHours": 1
+    }
+  ],
+  "deadLetter": {
+    "namePattern": "<source-topic>.<consumer-group>.dlt",
+    "retentionHours": 336,
+    "requiredMetadata": [
+      "sourceTopic",
+      "sourcePartition",
+      "sourceOffset",
+      "eventId",
+      "attempts",
+      "errorCode"
+    ],
+    "notes": "OTP DLT chỉ chứa ciphertext và metadata đã mask, không plaintext; hạn nghiệp vụ vẫn theo expiresAt."
+  }
+}

@@ -1,0 +1,400 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - customer API",
+    "version": "2.1.0",
+    "description": "Hợp đồng thiết kế theo SRS X và kiến trúc 7 service. Mọi request từ client đi qua Gateway; dùng prefix /api/v1. Chưa xác nhận backend đã triển khai. Operation x-contract=extension là đề xuất bổ sung, không phải API nghiệm thu đã chốt."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/customers/{id}": {
+      "get": {
+        "operationId": "customer_get__customers_id",
+        "tags": [
+          "customer"
+        ],
+        "summary": "Xem hồ sơ Customer",
+        "description": "Customer chỉ xem hồ sơ của mình. fullName/phone/email lấy từ Identity; lỗi dependency trả 503, không trả password/OTP.",
+        "x-service-owner": "customer",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR75"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      },
+      "patch": {
+        "operationId": "customer_patch_profile",
+        "tags": [
+          "customer"
+        ],
+        "summary": "Cập nhật Customer",
+        "x-service-owner": "customer",
+        "x-contract": "extension",
+        "x-fr": [],
+        "x-roles": [
+          "CUSTOMER",
+          "ADMIN",
+          "OPERATOR"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "operationId"
+                    ],
+                    "properties": {
+                      "operationId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "defaultPaymentMethod": {
+                        "type": "string",
+                        "enum": [
+                          "CASH",
+                          "ELECTRONIC"
+                        ]
+                      },
+                      "fullName": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      }
+                    },
+                    "anyOf": [
+                      {
+                        "required": [
+                          "defaultPaymentMethod"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "fullName"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "phone"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "email"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "operationId",
+                      "status"
+                    ],
+                    "properties": {
+                      "operationId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "ACTIVE",
+                          "LOCKED",
+                          "INACTIVE"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "customerId",
+                    "updated"
+                  ],
+                  "properties": {
+                    "customerId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "updated": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      }
+    },
+    "schemas": {
+      "Customer": {
+        "type": "object",
+        "required": [
+          "customerId",
+          "userId",
+          "fullName"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "format": "email"
+          },
+          "defaultPaymentMethod": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "CASH",
+              "ELECTRONIC"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "customer",
+  "x-persistence": {
+    "engine": "MongoDB",
+    "database": "customer_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

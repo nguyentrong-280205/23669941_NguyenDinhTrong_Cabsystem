@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CAB booking integration events v1",
+  "allOf": [
+    {
+      "$ref": "event-envelope.schema.json"
+    }
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "eventType": {
+          "const": "booking.created"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "bookingId",
+            "customerId"
+          ],
+          "properties": {
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "offer.created"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "bookingId",
+            "customerId",
+            "offerId",
+            "driverId",
+            "expiresAt"
+          ],
+          "properties": {
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "offerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "driverId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expiresAt": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "booking.canceled"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "bookingId",
+            "customerId",
+            "reason"
+          ],
+          "properties": {
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "booking.no-driver-found"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "bookingId",
+            "customerId"
+          ],
+          "properties": {
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    }
+  ]
+}

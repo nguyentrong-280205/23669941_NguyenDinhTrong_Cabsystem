@@ -1,0 +1,332 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - Gateway Health API",
+    "version": "2.1.0",
+    "description": "Nguồn hợp đồng health của Gateway; bundle openapi.json được sinh bằng scripts/sync-gateway.cjs."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "gateway_get__health",
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Liveness Gateway",
+        "description": "Chỉ xác nhận process sống, không khẳng định dependencies sẵn sàng.",
+        "x-service-owner": "gateway",
+        "x-contract": "srs",
+        "x-fr": [],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tiến trình Gateway đang hoạt động",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "healthy"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/ready": {
+      "get": {
+        "operationId": "gateway_get__ready",
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Readiness Gateway",
+        "description": "200 khi dependency bắt buộc sẵn sàng, 503 not_ready; chỉ trả thông tin tối thiểu.",
+        "x-service-owner": "gateway",
+        "x-contract": "srs",
+        "x-fr": [],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dependencies bắt buộc sẵn sàng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "ready"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependencies bắt buộc chưa sẵn sàng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "not_ready"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/health/services": {
+      "get": {
+        "operationId": "gateway_get__health_services",
+        "tags": [
+          "gateway"
+        ],
+        "summary": "Health tổng hợp",
+        "description": "Admin JWT; 503 degraded/unavailable khi dependency bắt buộc lỗi.",
+        "x-service-owner": "gateway",
+        "x-contract": "srs",
+        "x-fr": [],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "services"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "healthy"
+                      ]
+                    },
+                    "services": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "status"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "minLength": 1,
+                            "enum": [
+                              "healthy",
+                              "degraded",
+                              "unavailable"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency bắt buộc lỗi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "services"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "degraded",
+                        "unavailable"
+                      ]
+                    },
+                    "services": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "status"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "minLength": 1,
+                            "enum": [
+                              "healthy",
+                              "degraded",
+                              "unavailable"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "ADMIN"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "gateway"
+}

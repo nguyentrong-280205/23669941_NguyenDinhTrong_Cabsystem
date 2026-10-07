@@ -1,0 +1,557 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - payment API",
+    "version": "2.1.0",
+    "description": "Hợp đồng thiết kế theo SRS X và kiến trúc 7 service. Mọi request từ client đi qua Gateway; dùng prefix /api/v1. Chưa xác nhận backend đã triển khai. Operation x-contract=extension là đề xuất bổ sung, không phải API nghiệm thu đã chốt."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/payments": {
+      "post": {
+        "operationId": "payment_post__payments",
+        "tags": [
+          "payment"
+        ],
+        "summary": "Tạo thanh toán điện tử",
+        "description": "Trip COMPLETED, đúng owner và Fare hợp lệ lấy từ Trip. Không nhận amount từ client. Cùng key/user và body trả nguyên HTTP status/body gốc; khác body trả 409. Khóa tripId ngăn charge lại khi đổi key hoặc projection PAID chưa cập nhật. GET dùng để lấy trạng thái mới nhất.",
+        "x-service-owner": "payment",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR36",
+          "FR65"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "paymentId",
+                    "status"
+                  ],
+                  "properties": {
+                    "paymentId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "PROCESSING"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "paymentId": "PAY-001",
+                  "status": "PROCESSING"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout upstream; tra cứu/retry bằng cùng ID trước khi bù",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "tripId",
+                  "method"
+                ],
+                "properties": {
+                  "tripId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "method": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "ELECTRONIC"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "example": {
+                "tripId": "TRIP-001",
+                "method": "ELECTRONIC"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payment-callbacks": {
+      "post": {
+        "operationId": "payment_post__payments_callback",
+        "tags": [
+          "payment"
+        ],
+        "summary": "Callback từ payment provider",
+        "description": "Provider signature bắt buộc, không dùng JWT user. Verify raw body, reference, amount/currency; sai chữ ký 401, sai amount/currency 400. Callback trùng hợp lệ trả ack và không tạo tác dụng trùng; event cũ không hạ COMPLETED. Adapter/chữ ký cụ thể cần chốt khi triển khai.",
+        "x-service-owner": "payment",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR37"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ack"
+                },
+                "example": {
+                  "ack": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "webhookAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "paymentId",
+                  "providerTransactionId",
+                  "status",
+                  "amount",
+                  "currency"
+                ],
+                "properties": {
+                  "paymentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "providerTransactionId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "COMPLETED",
+                      "FAILED",
+                      "PROCESSING"
+                    ]
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "VND"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "paymentId": "PAY-001",
+                "providerTransactionId": "PROV-001",
+                "status": "COMPLETED",
+                "amount": 50000,
+                "currency": "VND"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/{id}": {
+      "get": {
+        "operationId": "payment_get__payments_id",
+        "tags": [
+          "payment"
+        ],
+        "summary": "Tra cứu thanh toán",
+        "description": "Tra cứu thanh toán",
+        "x-service-owner": "payment",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR55"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      },
+      "webhookAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Webhook-Signature",
+        "description": "Tên header adapter đề xuất; xác minh chữ ký trên raw body theo provider được chọn, không chỉ kiểm tra header tồn tại."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "Ack": {
+        "type": "object",
+        "required": [
+          "ack"
+        ],
+        "properties": {
+          "ack": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "required": [
+          "paymentId",
+          "tripId",
+          "amount",
+          "currency",
+          "method",
+          "status"
+        ],
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tripId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "VND"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "CASH",
+              "ELECTRONIC"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "payment",
+  "x-persistence": {
+    "engine": "PostgreSQL",
+    "database": "payment_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

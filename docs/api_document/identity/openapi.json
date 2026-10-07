@@ -1,0 +1,1094 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - identity API",
+    "version": "2.1.0",
+    "description": "Hợp đồng thiết kế theo SRS X và kiến trúc 7 service. Mọi request từ client đi qua Gateway; dùng prefix /api/v1. Chưa xác nhận backend đã triển khai. Operation x-contract=extension là đề xuất bổ sung, không phải API nghiệm thu đã chốt."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/driver-otp-challenges": {
+      "post": {
+        "operationId": "identity_post__auth_driver_otp_request",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Yêu cầu OTP đăng ký Driver",
+        "description": "OTP sống 5 phút, gửi lại sau ít nhất 60 giây; không trả mã OTP hoặc ghi mã vào log.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR76"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "challengeId",
+                    "expiresIn"
+                  ],
+                  "properties": {
+                    "challengeId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "expiresIn": {
+                      "type": "integer",
+                      "nullable": true,
+                      "example": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/driver-otp-verifications": {
+      "post": {
+        "operationId": "identity_post__auth_driver_otp_verify",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Xác minh OTP",
+        "description": "Tối đa 5 lần sai; sai/hết hạn/đã dùng trả 400. Registration token một lần, sống 5 phút, ràng buộc phone/mục đích.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR76"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "registrationToken"
+                  ],
+                  "properties": {
+                    "registrationToken": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "challengeId",
+                  "otp"
+                ],
+                "properties": {
+                  "challengeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "otp": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/register": {
+      "post": {
+        "operationId": "identity_post__auth_register_customer",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Đăng ký Customer",
+        "description": "Identity điều phối tạo User và hồ sơ Customer bằng registrationId ổn định. Chỉ trả 201 khi cả hai hoàn tất; không tạo trùng hoặc xóa User mù quáng khi timeout.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR01"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "customerId",
+                    "userId"
+                  ],
+                  "properties": {
+                    "customerId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "userId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "example": {
+                  "customerId": "CUS-001",
+                  "userId": "USR-001"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout upstream; tra cứu/retry bằng cùng ID trước khi bù",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fullName",
+                  "password"
+                ],
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "password",
+                    "writeOnly": true
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "phone"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "email"
+                    ]
+                  }
+                ]
+              },
+              "example": {
+                "fullName": "Khách demo",
+                "phone": "0900000001",
+                "password": "demo-password-placeholder"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drivers/register": {
+      "post": {
+        "operationId": "identity_post__auth_register_driver",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Hoàn tất đăng ký Driver",
+        "description": "Registration token hợp lệ thay JWT user. Identity gọi Driver tạo hồ sơ bằng registrationId; chỉ báo 201 sau khi tạo User/Driver/Vehicle thành công.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR76"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "driverId",
+                    "approvalStatus",
+                    "availabilityStatus"
+                  ],
+                  "properties": {
+                    "driverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "approvalStatus": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "PENDING"
+                      ]
+                    },
+                    "availabilityStatus": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "OFFLINE"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout upstream; tra cứu/retry bằng cùng ID trước khi bù",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "registrationToken",
+                  "fullName",
+                  "password",
+                  "licenseNumber",
+                  "vehicle"
+                ],
+                "properties": {
+                  "registrationToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  },
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "password",
+                    "writeOnly": true
+                  },
+                  "licenseNumber": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  },
+                  "vehicle": {
+                    "$ref": "#/components/schemas/VehicleInput"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/login": {
+      "post": {
+        "operationId": "identity_post__customers_login",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Đăng nhập Customer",
+        "description": "Đăng nhập tài khoản Customer; giữ nguyên kiểm tra mật khẩu, trạng thái tài khoản và định dạng token.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR02"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "accessToken",
+                    "tokenType",
+                    "expiresIn"
+                  ],
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tokenType": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expiresIn": {
+                      "type": "integer",
+                      "nullable": true,
+                      "minimum": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "password",
+                    "writeOnly": true
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "phone"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "email"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drivers/login": {
+      "post": {
+        "operationId": "identity_post__drivers_login",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Đăng nhập Driver",
+        "description": "Đăng nhập tài khoản Driver; giữ nguyên kiểm tra mật khẩu, trạng thái tài khoản và định dạng token.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR02"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "accessToken",
+                    "tokenType",
+                    "expiresIn"
+                  ],
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tokenType": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expiresIn": {
+                      "type": "integer",
+                      "nullable": true,
+                      "minimum": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "password",
+                    "writeOnly": true
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "phone"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "email"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/login": {
+      "post": {
+        "operationId": "identity_post__admin_login",
+        "tags": [
+          "identity"
+        ],
+        "summary": "Đăng nhập Admin/Operator",
+        "description": "Đăng nhập tài khoản Admin/Operator; giữ nguyên kiểm tra mật khẩu, trạng thái tài khoản và định dạng token.",
+        "x-service-owner": "identity",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR02"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "accessToken",
+                    "tokenType",
+                    "expiresIn"
+                  ],
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "tokenType": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expiresIn": {
+                      "type": "integer",
+                      "nullable": true,
+                      "minimum": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt giới hạn gửi/request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Số giây chờ trước lần thử kế tiếp",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "email": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "password",
+                    "writeOnly": true
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "phone"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "email"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "VehicleInput": {
+        "type": "object",
+        "required": [
+          "vehicleTypeId",
+          "plateNumber"
+        ],
+        "properties": {
+          "vehicleTypeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plateNumber": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "identity",
+  "x-persistence": {
+    "engine": "PostgreSQL",
+    "database": "identity_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

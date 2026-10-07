@@ -1,0 +1,359 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - notification API",
+    "version": "2.1.0",
+    "description": "Hợp đồng thiết kế theo SRS X và kiến trúc 7 service. Mọi request từ client đi qua Gateway; dùng prefix /api/v1. Chưa xác nhận backend đã triển khai. Operation x-contract=extension là đề xuất bổ sung, không phải API nghiệm thu đã chốt. Delivery task/inbox được lưu nguyên tử trong MongoDB notification_db, commit DB trước offset."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "notification_get__notifications",
+        "tags": [
+          "notification"
+        ],
+        "summary": "Thông báo của người nhận",
+        "description": "Chỉ thông báo theo userId đã xác thực, không lấy recipient từ query client; không trả OTP/secret trong content. items/page/limit/total phục vụ demo.",
+        "x-service-owner": "notification",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR74"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "limit",
+                    "total"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER",
+          "DRIVER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      }
+    },
+    "/api/v1/notifications/{id}": {
+      "patch": {
+        "operationId": "notification_patch__notifications_id_read",
+        "tags": [
+          "notification"
+        ],
+        "summary": "Đánh dấu thông báo của mình đã đọc",
+        "description": "API Should FR71; owner kiểm tra userId/recipientId. Không cho phép sửa thông báo của người khác.",
+        "x-service-owner": "notification",
+        "x-contract": "extension",
+        "x-fr": [
+          "FR71"
+        ],
+        "x-roles": [
+          "CUSTOMER",
+          "DRIVER",
+          "ADMIN",
+          "OPERATOR"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Đã đọc",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "notificationId",
+                    "isRead"
+                  ],
+                  "properties": {
+                    "notificationId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "isRead": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/ownership/not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Xác thực/ownership/not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Xác thực/ownership/not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      }
+    },
+    "schemas": {
+      "Notification": {
+        "type": "object",
+        "required": [
+          "notificationId",
+          "userId",
+          "type",
+          "channel",
+          "content",
+          "status",
+          "referenceType",
+          "referenceId",
+          "createdAt"
+        ],
+        "properties": {
+          "notificationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "channel": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "IN_APP",
+              "PUSH",
+              "SMS",
+              "EMAIL"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "SENT",
+              "DELIVERED",
+              "FAILED",
+              "EXPIRED"
+            ]
+          },
+          "referenceType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "referenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "minLength": 1,
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "notification",
+  "x-persistence": {
+    "engine": "MongoDB",
+    "database": "notification_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "cab-notification-service",
+  "version": "1.0.0",
+  "description": "CAB System - Notification Service",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {}
+}

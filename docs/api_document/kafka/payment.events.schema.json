@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CAB payment integration events v1",
+  "allOf": [
+    {
+      "$ref": "event-envelope.schema.json"
+    }
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "eventType": {
+          "const": "payment.completed"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "paymentId",
+            "tripId",
+            "customerId",
+            "amount",
+            "currency"
+          ],
+          "properties": {
+            "paymentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "amount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "const": "VND"
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "payment.failed"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "paymentId",
+            "tripId",
+            "customerId",
+            "amount",
+            "currency",
+            "failureCode"
+          ],
+          "properties": {
+            "paymentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "amount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "const": "VND"
+            },
+            "failureCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "payment.processing"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "paymentId",
+            "tripId",
+            "customerId",
+            "amount",
+            "currency"
+          ],
+          "properties": {
+            "paymentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "amount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "const": "VND"
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    }
+  ]
+}

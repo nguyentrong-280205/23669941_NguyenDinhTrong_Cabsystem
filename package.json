@@ -1,0 +1,38 @@
+{
+  "name": "cab-system-monorepo",
+  "version": "1.0.0",
+  "description": "CAB System - Microservices Backend",
+  "private": true,
+  "scripts": {
+    "configure:local": "node scripts/configure-local.js",
+    "init:db": "node scripts/init-databases.js",
+    "seed": "node scripts/seed-demo.js",
+    "install:all": "npm install --ignore-scripts",
+    "start": "node scripts/start-all.js",
+    "test": "node --test --test-isolation=none tests/*.test.cjs",
+    "check:api": "npm --prefix docs/api_document run check",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "sandbox": "node scripts/sandbox-server.js",
+    "format:services": "prettier --write \"services/**/*.js\" \"shared/lib/*.js\""
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.20.0",
+    "pg": "^8.11.5",
+    "redis": "^4.7.1"
+  },
+  "workspaces": [
+    "services/*"
+  ],
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

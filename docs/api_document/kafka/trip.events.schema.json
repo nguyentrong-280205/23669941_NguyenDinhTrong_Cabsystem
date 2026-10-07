@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CAB trip integration events v1",
+  "allOf": [
+    {
+      "$ref": "event-envelope.schema.json"
+    }
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "eventType": {
+          "const": "driver.assigned"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "tripId",
+            "assignmentId",
+            "bookingId",
+            "customerId",
+            "driverId"
+          ],
+          "properties": {
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assignmentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "driverId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "driver.arrived"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "tripId",
+            "assignmentId",
+            "bookingId",
+            "customerId",
+            "driverId"
+          ],
+          "properties": {
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assignmentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "driverId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "trip.canceled"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "tripId",
+            "assignmentId",
+            "bookingId",
+            "customerId",
+            "driverId",
+            "reason",
+            "canceledAt"
+          ],
+          "properties": {
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assignmentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "driverId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "canceledAt": {
+              "type": "string",
+              "minLength": 1,
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "trip.completed"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "tripId",
+            "assignmentId",
+            "bookingId",
+            "customerId",
+            "driverId",
+            "completedAt"
+          ],
+          "properties": {
+            "tripId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assignmentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "bookingId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "customerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "driverId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "completedAt": {
+              "type": "string",
+              "minLength": 1,
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - booking Internal API",
+    "version": "2.1.0",
+    "description": "Hợp đồng HTTP nội bộ đề xuất theo microservice_design.md mục 10.1. Không public qua Gateway. Service identity và quyền caller bắt buộc được kiểm tra. Port là giá trị mẫu cần khớp Compose."
+  },
+  "servers": [
+    {
+      "url": "http://booking-service:{port}",
+      "variables": {
+        "port": {
+          "default": "3004",
+          "description": "Port nội bộ theo infra/compose.yaml hiện tại; cấu hình qua biến port khi môi trường thay đổi."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "serviceAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/internal-offers/{id}/delivery-contexts": {
+      "get": {
+        "operationId": "booking_get__internal_offers_id_delivery_context",
+        "tags": [
+          "booking"
+        ],
+        "summary": "Kiểm tra Offer trước gửi",
+        "description": "Kiểm tra Offer trước gửi",
+        "x-service-owner": "booking",
+        "x-contract": "internal-proposal",
+        "x-fr": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "offerId",
+                    "recipientUserId",
+                    "status",
+                    "expiresAt"
+                  ],
+                  "properties": {
+                    "offerId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "recipientUserId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "PENDING",
+                        "ACCEPTED",
+                        "REJECTED",
+                        "TIMEOUT",
+                        "CANCELED"
+                      ]
+                    },
+                    "expiresAt": {
+                      "type": "string", "nullable": true,
+                      "minLength": 1,
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-callers": [
+          "notification"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "serviceAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Đề xuất JWT service-to-service, audience riêng, không chấp nhận JWT user thay service credential."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "booking",
+  "x-persistence": {
+    "engine": "PostgreSQL",
+    "database": "booking_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

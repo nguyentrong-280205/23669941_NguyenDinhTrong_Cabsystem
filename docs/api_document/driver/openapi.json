@@ -1,0 +1,1169 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - driver API",
+    "version": "2.1.0",
+    "description": "Hợp đồng thiết kế theo SRS X và kiến trúc 7 service. Mọi request từ client đi qua Gateway; dùng prefix /api/v1. Chưa xác nhận backend đã triển khai. Operation x-contract=extension là đề xuất bổ sung, không phải API nghiệm thu đã chốt."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/drivers/{id}": {
+      "get": {
+        "operationId": "driver_get__drivers_id",
+        "tags": [
+          "driver"
+        ],
+        "summary": "Xem thông tin Driver",
+        "description": "Customer ch? xem h? s? c?ng khai c?a t?i x? APPROVED thu?c chuy?n ?? ???c k?ch ho?t c?a m?nh, ch?a h?y ho?c ?? ho?n t?t; sai quan h? tr? 403. Driver xem ch?nh m?nh. Admin/Operator xem ??y ?? th?ng tin nghi?p v?, g?m userId, ?i?n tho?i, email n?u c? v? GPLX; kh?ng tr? credential ho?c d? li?u m? h?a.",
+        "x-service-owner": "driver",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR78"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Driver"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER",
+          "DRIVER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      },
+      "patch": {
+        "operationId": "driver_admin_suspend",
+        "tags": [
+          "driver"
+        ],
+        "summary": "driver_admin_suspend",
+        "x-service-owner": "driver",
+        "x-contract": "extension",
+        "x-fr": [],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "suspended"
+                ],
+                "properties": {
+                  "suspended": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "driverId",
+                    "suspended"
+                  ],
+                  "properties": {
+                    "driverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "suspended": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drivers": {
+      "get": {
+        "operationId": "driver_get__drivers_nearby",
+        "tags": [
+          "driver"
+        ],
+        "summary": "Tìm Driver trong khu vực",
+        "description": "Tra c?u theo v? tr? ?? l?u, kh?ng gi?i h?n tu?i v? tr? v? kh?ng lo?i t?i x? c? reservation. Admin/Operator v? Driver ???c truy c?p; Customer b? t? ch?i (403). L?c b?n k?nh/tr?ng th?i tr??c khi s?p x?p distanceKm ASC, driverId v? ph?n trang. Booking matching qua API n?i b? v?n y?u c?u APPROVED/AVAILABLE, v? tr? m?i v? kh?ng reservation.",
+        "x-service-owner": "driver",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR79"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": true,
+              "minimum": 0,
+              "maximum": 5,
+              "default": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "enum": [
+                "AVAILABLE",
+                "OFFLINE",
+                "BUSY",
+                "SUSPENDED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách sau lọc khoảng cách và quyền",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "limit",
+                    "total"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/Driver"
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "distanceKm"
+                            ],
+                            "properties": {
+                              "distanceKm": {
+                                "type": "number",
+                                "minimum": 0
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "DRIVER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      }
+    },
+    "/api/v1/driver-applications": {
+      "get": {
+        "operationId": "driver_get__admin_driver_applications",
+        "tags": [
+          "driver"
+        ],
+        "summary": "Danh sách hồ sơ Driver",
+        "description": "Danh sách hồ sơ Driver",
+        "x-service-owner": "driver",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR77"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "default": "PENDING"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "page",
+                    "limit",
+                    "total"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Driver"
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "ADMIN"
+        ]
+      }
+    },
+    "/api/v1/driver-applications/{id}": {
+      "patch": {
+        "operationId": "driver_patch__admin_driver_applications_id",
+        "tags": [
+          "driver"
+        ],
+        "summary": "Duyệt hoặc từ chối Driver",
+        "description": "Chỉ xử lý hồ sơ PENDING, lưu reviewedBy/reviewedAt/reason, audit và outbox. Duyệt không tự đặt AVAILABLE.",
+        "x-service-owner": "driver",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR77"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "driverId",
+                    "approvalStatus",
+                    "reviewedAt"
+                  ],
+                  "properties": {
+                    "driverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "approvalStatus": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "APPROVED",
+                        "REJECTED"
+                      ]
+                    },
+                    "reviewedAt": {
+                      "type": "string",
+                      "minLength": 1,
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "ADMIN"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "decision"
+                    ],
+                    "properties": {
+                      "decision": {
+                        "type": "string",
+                        "minLength": 1,
+                        "enum": [
+                          "APPROVED"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "decision",
+                      "reason"
+                    ],
+                    "properties": {
+                      "decision": {
+                        "type": "string",
+                        "minLength": 1,
+                        "enum": [
+                          "REJECTED"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "\\S"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drivers/me/locations": {
+      "post": {
+        "operationId": "driver_post_own_location",
+        "tags": [
+          "driver"
+        ],
+        "summary": "driver_post_own_location",
+        "x-service-owner": "driver",
+        "x-contract": "extension",
+        "x-fr": [],
+        "x-roles": [
+          "DRIVER"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "latitude",
+                  "longitude",
+                  "recordedAt"
+                ],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "recordedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "locationId"
+                  ],
+                  "properties": {
+                    "locationId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Yêu cầu thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/drivers/me": {
+      "patch": {
+        "operationId": "driver_patch__drivers_me_availability",
+        "tags": [
+          "driver"
+        ],
+        "summary": "Bật/tắt nhận chuyến",
+        "description": "Chỉ Driver APPROVED. PENDING/REJECTED hoặc chuyển trạng thái khi BUSY không hợp lệ trả 409; không cho client đặt BUSY.",
+        "x-service-owner": "driver",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR54"
+        ],
+        "parameters": [
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "driverId",
+                    "availabilityStatus"
+                  ],
+                  "properties": {
+                    "driverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "availabilityStatus": {
+                      "type": "string",
+                      "minLength": 1,
+                      "enum": [
+                        "AVAILABLE",
+                        "OFFLINE"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "DRIVER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "availabilityStatus"
+                ],
+                "properties": {
+                  "availabilityStatus": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "AVAILABLE",
+                      "OFFLINE"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      }
+    },
+    "schemas": {
+      "Driver": {
+        "type": "object",
+        "required": [
+          "driverId",
+          "fullName",
+          "approvalStatus",
+          "availabilityStatus"
+        ],
+        "properties": {
+          "driverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approvalStatus": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "availabilityStatus": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "OFFLINE",
+              "AVAILABLE",
+              "BUSY",
+              "SUSPENDED"
+            ]
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "distanceKm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "phone": {
+            "type": "string",
+            "description": "Only visible to Admin/Operator or the driver themselves, when available."
+          },
+          "email": {
+            "type": "string",
+            "description": "Only visible to Admin/Operator or the driver themselves, when available."
+          },
+          "licenseNumber": {
+            "type": "string",
+            "description": "Only visible to Admin/Operator or the driver themselves, when available."
+          }
+        }
+      },
+      "Vehicle": {
+        "type": "object",
+        "required": [
+          "vehicleId",
+          "driverId",
+          "vehicleTypeId",
+          "plateNumber",
+          "status"
+        ],
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plateNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "driver",
+  "x-persistence": {
+    "engine": "MongoDB",
+    "database": "driver_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

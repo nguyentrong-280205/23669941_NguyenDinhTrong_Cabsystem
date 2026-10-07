@@ -1,0 +1,1067 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CAB System - trip API",
+    "version": "2.1.0",
+    "description": "Hợp đồng thiết kế theo SRS X và kiến trúc 7 service. Mọi request từ client đi qua Gateway; dùng prefix /api/v1. Chưa xác nhận backend đã triển khai. Operation x-contract=extension là đề xuất bổ sung, không phải API nghiệm thu đã chốt."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Gateway demo; đổi sang địa chỉ Gateway thực tế khi triển khai"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/trips/{id}": {
+      "get": {
+        "operationId": "trip_get__trips_id",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Xem chuyến đi và tracking",
+        "description": "Customer sở hữu, Driver được gán hoặc Admin/Operator. Ghép driver/vehicle/latestLocation qua API owner theo quyền; vị trí cũ kèm recordedAt, lỗi vị trí thể hiện unavailable. paymentStatus là projection từ Payment.",
+        "x-service-owner": "trip",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR29"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trip"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER",
+          "DRIVER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      },
+      "patch": {
+        "operationId": "trip_patch__trips_id_status",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Cập nhật trạng thái chuyến",
+        "description": "Chỉ Driver được gán, assignment đã activate. ASSIGNED → DRIVER_ARRIVING → DRIVER_ARRIVED → PICKED_UP → IN_PROGRESS → COMPLETED; cũng cho phép ASSIGNED → DRIVER_ARRIVED. State sai trả 409. Fare lỗi không rollback COMPLETED hoặc giữ Driver BUSY.",
+        "x-service-owner": "trip",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR23"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tripId",
+                    "status"
+                  ],
+                  "properties": {
+                    "tripId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "status": {
+                      "$ref": "#/components/schemas/TripStatus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "DRIVER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "DRIVER_ARRIVING",
+                      "DRIVER_ARRIVED",
+                      "PICKED_UP",
+                      "IN_PROGRESS",
+                      "COMPLETED"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trips/{id}/locations": {
+      "post": {
+        "operationId": "trip_post__trips_id_locations",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Cập nhật vị trí chuyến",
+        "description": "Trip kiểm tra Driver được gán và trạng thái active, tạo sampleId ổn định khi gọi/retry Driver Service lưu vị trí. Không ghi driver_db trực tiếp.",
+        "x-service-owner": "trip",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR28"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "locationId"
+                  ],
+                  "properties": {
+                    "locationId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "DRIVER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "latitude",
+                  "longitude",
+                  "recordedAt"
+                ],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "recordedAt": {
+                    "type": "string",
+                    "minLength": 1,
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trips/{id}/reviews": {
+      "post": {
+        "operationId": "trip_post__trips_id_reviews",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Đánh giá chuyến đi",
+        "description": "Customer sở hữu Trip COMPLETED; UNIQUE tripId, trùng trả 409, score sai trả 400. Không yêu cầu PAID. Comment plain text.",
+        "x-service-owner": "trip",
+        "x-contract": "srs",
+        "x-fr": [
+          "FR39"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Review"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "score"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trips/{id}/fares": {
+      "get": {
+        "operationId": "trip_get__trips_id_fare",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Xem Fare của chuyến",
+        "description": "Hợp đồng bổ sung đề xuất. Kiểm tra ownership/quyền; 409 nếu Fare chưa tính thành công. Fare thuộc Trip Service.",
+        "x-service-owner": "trip",
+        "x-contract": "extension",
+        "x-fr": [
+          "FR34"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fare"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER",
+          "DRIVER",
+          "ADMIN",
+          "OPERATOR"
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT người dùng; verify signature/issuer/audience/exp và ownership ở service."
+      }
+    },
+    "schemas": {
+      "Trip": {
+        "type": "object",
+        "required": [
+          "tripId",
+          "bookingId",
+          "customerId",
+          "driverId",
+          "vehicleId",
+          "status",
+          "paymentStatus"
+        ],
+        "properties": {
+          "tripId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bookingId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "vehicleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/TripStatus"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "UNPAID",
+              "PAID"
+            ]
+          },
+          "driver": {
+            "$ref": "#/components/schemas/Driver"
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "latestLocation": {
+            "type": "object",
+            "required": [
+              "locationId",
+              "latitude",
+              "longitude",
+              "recordedAt"
+            ],
+            "properties": {
+              "locationId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "recordedAt": {
+                "type": "string",
+                "minLength": 1,
+                "format": "date-time"
+              }
+            },
+            "nullable": true
+          },
+          "locationAvailable": {
+            "type": "boolean"
+          },
+          "review": {
+            "type": "object",
+            "required": [
+              "ratingId",
+              "tripId",
+              "customerId",
+              "driverId",
+              "score",
+              "comment",
+              "createdAt"
+            ],
+            "properties": {
+              "ratingId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tripId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "customerId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "driverId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "comment": {
+                "type": "string",
+                "description": "Plain text; clients must escape for the display context."
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "nullable": true,
+            "description": "Saved review, or null when the trip has not been reviewed."
+          }
+        }
+      },
+      "TripStatus": {
+        "type": "string",
+        "minLength": 1,
+        "enum": [
+          "ASSIGNED",
+          "DRIVER_ARRIVING",
+          "DRIVER_ARRIVED",
+          "PICKED_UP",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELED"
+        ]
+      },
+      "Driver": {
+        "type": "object",
+        "required": [
+          "driverId",
+          "fullName",
+          "approvalStatus",
+          "availabilityStatus"
+        ],
+        "properties": {
+          "driverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approvalStatus": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "availabilityStatus": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "OFFLINE",
+              "AVAILABLE",
+              "BUSY",
+              "SUSPENDED"
+            ]
+          },
+          "vehicle": {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          "distanceKm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "phone": {
+            "type": "string",
+            "description": "Only visible to Admin/Operator or the driver themselves, when available."
+          },
+          "email": {
+            "type": "string",
+            "description": "Only visible to Admin/Operator or the driver themselves, when available."
+          },
+          "licenseNumber": {
+            "type": "string",
+            "description": "Only visible to Admin/Operator or the driver themselves, when available."
+          }
+        }
+      },
+      "Vehicle": {
+        "type": "object",
+        "required": [
+          "vehicleId",
+          "driverId",
+          "vehicleTypeId",
+          "plateNumber",
+          "status"
+        ],
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "vehicleTypeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "plateNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        }
+      },
+      "Location": {
+        "type": "object",
+        "required": [
+          "locationId",
+          "latitude",
+          "longitude",
+          "recordedAt"
+        ],
+        "properties": {
+          "locationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "recordedAt": {
+            "type": "string",
+            "minLength": 1,
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correlationId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "Fare": {
+        "type": "object",
+        "required": [
+          "fareId",
+          "tripId",
+          "pricingRuleId",
+          "pricingVersion",
+          "totalAmount",
+          "currency",
+          "calculatedAt"
+        ],
+        "properties": {
+          "fareId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tripId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pricingRuleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pricingVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalAmount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 1,
+            "enum": [
+              "VND"
+            ]
+          },
+          "calculatedAt": {
+            "type": "string",
+            "minLength": 1,
+            "format": "date-time"
+          }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "required": [
+          "ratingId",
+          "tripId",
+          "customerId",
+          "driverId",
+          "score",
+          "comment",
+          "createdAt"
+        ],
+        "properties": {
+          "ratingId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tripId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "description": "Plain text; clients must escape for the display context."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "x-service-owner": "trip",
+  "x-persistence": {
+    "engine": "MongoDB",
+    "database": "trip_db",
+    "description": "Metadata thiết kế; contract HTTP không phải schema vật lý. Mỗi service chỉ truy cập database của mình."
+  }
+}

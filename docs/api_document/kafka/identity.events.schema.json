@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CAB identity integration events v1",
+  "allOf": [
+    {
+      "$ref": "event-envelope.schema.json"
+    }
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "eventType": {
+          "const": "otp.requested"
+        },
+        "payload": {
+          "type": "object",
+          "required": [
+            "challengeId",
+            "expiresAt",
+            "encryptedPayload",
+            "keyVersion"
+          ],
+          "properties": {
+            "challengeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expiresAt": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "format": "date-time"
+            },
+            "encryptedPayload": {
+              "type": "string",
+              "minLength": 1
+            },
+            "keyVersion": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "required": [
+        "eventType",
+        "payload"
+      ]
+    }
+  ]
+}
