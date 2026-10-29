@@ -3540,7 +3540,7 @@
           "trip"
         ],
         "summary": "Cập nhật trạng thái chuyến",
-        "description": "Chỉ Driver được gán, assignment đã activate. ASSIGNED → DRIVER_ARRIVING → DRIVER_ARRIVED → PICKED_UP → IN_PROGRESS → COMPLETED; cũng cho phép ASSIGNED → DRIVER_ARRIVED. State sai trả 409. Fare lỗi không rollback COMPLETED hoặc giữ Driver BUSY.",
+        "description": "Chỉ Driver được gán, assignment đã activate. ASSIGNED → DRIVER_ARRIVING → DRIVER_ARRIVED → PICKED_UP → IN_PROGRESS → COMPLETED; cũng cho phép ASSIGNED → DRIVER_ARRIVED. State sai trả 409. Fare lỗi không rollback COMPLETED hoặc giữ Driver BUSY. Tracking is separate from the frozen Haversine distance and Fare. COMPLETED preserves the same Fare and fareId.",
         "x-service-owner": "trip",
         "x-contract": "srs",
         "x-fr": [
@@ -3840,7 +3840,7 @@
           "trip"
         ],
         "summary": "Đánh giá chuyến đi",
-        "description": "Customer sở hữu Trip COMPLETED; UNIQUE tripId, trùng trả 409, score sai trả 400. Không yêu cầu PAID. Comment plain text.",
+        "description": "Customer sở hữu Trip COMPLETED; UNIQUE tripId, trùng trả 409, score sai trả 400. Không yêu cầu PAID. Comment plain text. HTML characters in comment are escaped before storage and response.",
         "x-service-owner": "trip",
         "x-contract": "srs",
         "x-fr": [
@@ -3964,6 +3964,136 @@
             }
           }
         }
+      },
+      "patch": {
+        "operationId": "trip_patch__trips_id_reviews",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Update an existing trip review",
+        "description": "Only the Customer owning a COMPLETED Trip can update its existing review. Omitted fields are preserved. HTML characters in a supplied comment are escaped. Missing review returns 404.",
+        "x-service-owner": "trip",
+        "x-contract": "extension",
+        "x-fr": [
+          "FR39"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Review"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": [
+          "CUSTOMER"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                },
+                "minProperties": 1,
+                "additionalProperties": false
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/trips/{id}/fares": {
@@ -3973,7 +4103,7 @@
           "trip"
         ],
         "summary": "Xem Fare của chuyến",
-        "description": "Hợp đồng bổ sung đề xuất. Kiểm tra ownership/quyền; 409 nếu Fare chưa tính thành công. Fare thuộc Trip Service.",
+        "description": "Returns the frozen Fare from ASSIGNED onward, before/during/after the ride. 409 for canceled Trips or unavailable Fare. Existing Fares, including paid legacy Fares, are never recalculated.",
         "x-service-owner": "trip",
         "x-contract": "extension",
         "x-fr": [
@@ -4086,7 +4216,7 @@
           "payment"
         ],
         "summary": "Tạo thanh toán điện tử",
-        "description": "Trip COMPLETED, đúng owner và Fare hợp lệ lấy từ Trip. Không nhận amount từ client. Cùng key/user và body trả nguyên HTTP status/body gốc; khác body trả 409. Khóa tripId ngăn charge lại khi đổi key hoặc projection PAID chưa cập nhật. GET dùng để lấy trạng thái mới nhất.",
+        "description": "Allows payment before, during or after a Trip: activated=true, Fare READY, lifecycle ASSIGNED through COMPLETED, never CANCELED. Amount comes only from backend Fare; client amount is rejected. Same key/user and body replays the original HTTP status/body; changed body returns 409. The persisted job atomically authorizes with Trip before contacting the provider, preventing cancellation/charge races. A cancellation that wins the race makes the Payment FAILED without charging. Active/completed payment per tripId prevents duplicate charges even before the PAID projection arrives. Callback HMAC and provider idempotency remain unchanged.",
         "x-service-owner": "payment",
         "x-contract": "srs",
         "x-fr": [
@@ -5176,6 +5306,35 @@
             },
             "nullable": true,
             "description": "Saved review, or null when the trip has not been reviewed."
+          },
+          "activated": {
+            "type": "boolean"
+          },
+          "distanceKm": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Frozen Haversine straight-line estimate between pickup and destination, rounded to 6 decimal places; positive distances have a minimum of 0.000001 km."
+          },
+          "durationMinutes": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Estimated duration used for the frozen Fare; currently 0."
+          },
+          "trackedDistanceKm": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Separate observed tracking distance; never changes the frozen Fare."
+          },
+          "fareStatus": {
+            "type": "string",
+            "enum": [
+              "READY",
+              "PENDING"
+            ],
+            "description": "READY at creation for new Trips; old unpaid Trips without Fare are reconciled lazily."
+          },
+          "fare": {
+            "$ref": "#/components/schemas/Fare"
           }
         }
       },
@@ -5265,6 +5424,21 @@
             "type": "string",
             "minLength": 1,
             "format": "date-time"
+          },
+          "baseFare": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Frozen amount in VND calculated when the Trip is created."
+          },
+          "distanceFare": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Frozen amount in VND calculated when the Trip is created."
+          },
+          "timeFare": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Frozen amount in VND calculated when the Trip is created."
           }
         }
       },
@@ -5306,6 +5480,10 @@
             "description": "Plain text; clients must escape for the display context."
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
             "type": "string",
             "format": "date-time"
           }

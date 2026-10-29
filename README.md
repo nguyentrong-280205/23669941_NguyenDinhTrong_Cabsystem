@@ -420,17 +420,20 @@ IN_PROGRESS
 COMPLETED
 ```
 
-Hủy chỉ được thực hiện trước `PICKED_UP` theo rule hiện tại.
+Hủy chỉ được thực hiện trước `PICKED_UP`, khi chưa thanh toán và không có Payment đang được xử lý. Trip đã `PAID` trả `409 TRIP_ALREADY_PAID` vì chưa hỗ trợ hoàn tiền.
 
 ### Fare
 
-Fare chỉ được tính khi Trip hoàn thành và có dữ liệu:
+Fare được chốt ngay khi tạo Trip `ASSIGNED`, cùng transaction với Trip:
 
-- distanceKm
-- durationMinutes
-- PricingRule hợp lệ
+- `distanceKm`: khoảng cách Haversine từ pickup đến destination, làm tròn 6 chữ số thập phân; khoảng cách dương không làm tròn về 0. Đây là ước tính đường thẳng, không phải tuyến đường giao thông.
+- `durationMinutes = 0` khi chưa có thời gian dự kiến.
+- `totalAmount = baseFare + round(distanceKm × perKmRate) + round(durationMinutes × perMinuteRate)`, dùng PricingRule tương ứng loại xe và `fareStatus = READY`.
+- Tracking cập nhật vị trí và `trackedDistanceKm` riêng; không thay đổi khoảng cách/Fare đã chốt. Hoàn thành chuyến giữ nguyên `fareId`.
 
 Trip Service là owner của Fare. Payment Service không được tự tính Fare.
+
+Chi tiết tương thích Trip cũ và hướng dẫn test: [Fare lúc tạo Trip và thanh toán trước](docs/upfront-fare.md).
 
 ---
 
@@ -472,6 +475,7 @@ PROCESSING
 
 Payment Service phải:
 
+- cho phép thanh toán trước, trong hoặc sau chuyến: Trip đã activated, Fare READY, trạng thái ASSIGNED đến COMPLETED và chưa CANCELED,
 - lấy Fare từ Trip Service,
 - không tin `amount` do client tự gửi,
 - xác minh callback,
@@ -909,7 +913,7 @@ Trip
 
 Trip COMPLETED
    │
-   ├── tính Fare
+   ├── giữ nguyên Fare đã chốt lúc tạo Trip
    └── publish trip.completed
              │
              ▼

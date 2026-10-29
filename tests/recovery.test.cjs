@@ -16,7 +16,7 @@ test('completion releases assignment even when Fare needs reconciliation; retry 
     await domain.tick();
     assert.equal((await store.get('trips',trip.tripId)).fare,undefined);
     const pending = await store.get('trips',trip.tripId);
-    await store.tx(tx=>tx.put('trips',trip.tripId,{...pending,lastSample:{latitude:0,longitude:0,recordedAt:C.now()},pricingSnapshot:{pricingRuleId:'RULE',version:1,baseFare:15000,perKmRate:10000,perMinuteRate:0}}));
+    await store.tx(tx=>tx.put('trips',trip.tripId,{...pending,pickup:{lat:0,lng:0,address:'A'},destination:{lat:0,lng:0,address:'B'},pricingSnapshot:{pricingRuleId:'RULE',version:1,baseFare:15000,perKmRate:10000,perMinuteRate:0}}));
     await domain.tick();
     const ready = await store.get('trips',trip.tripId);
     assert.equal(ready.fareStatus,'READY');

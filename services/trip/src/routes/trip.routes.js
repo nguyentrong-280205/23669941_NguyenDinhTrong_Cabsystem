@@ -22,6 +22,12 @@ module.exports = [
   },
   {
     method: 'patch',
+    path: '/api/v1/trips/:id/reviews',
+    action: 'updateReview',
+    contract: 'openapi',
+  },
+  {
+    method: 'patch',
     path: '/api/v1/trips/:id',
     action: 'updateTripStatus',
     contract: 'openapi',
@@ -51,6 +57,13 @@ module.exports = [
     action: 'getTripByAssignment',
     contract: 'internal',
     callers: ['booking'],
+  },
+  {
+    method: 'post',
+    path: '/api/v1/internal-trips/:id/payment-authorizations',
+    action: 'authorizePayment',
+    contract: 'internal',
+    callers: ['payment'],
   },
   {
     method: 'get',

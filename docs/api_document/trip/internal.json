@@ -29,7 +29,7 @@
           "trip"
         ],
         "summary": "Tạo Trip chưa activate",
-        "description": "UNIQUE bookingId/assignmentId, snapshot đã xác minh. Retry cùng ID/body trả outcome cũ kể cả đã activate; không reset state. activated là phase kỹ thuật, không thêm enum Trip public. Outbox và state được cập nhật nguyên tử trong MongoDB transaction của trip_db trên replica set, không mở transaction xuyên service.",
+        "description": "UNIQUE bookingId/assignmentId, snapshot đã xác minh. Retry cùng ID/body trả outcome cũ kể cả đã activate; không reset state. activated là phase kỹ thuật, không thêm enum Trip public. Outbox và state được cập nhật nguyên tử trong MongoDB transaction của trip_db trên replica set, không mở transaction xuyên service. New Trips atomically freeze Haversine distanceKm and Fare with fareStatus READY, durationMinutes 0; assignment retry returns the existing Trip without creating another Fare.",
         "x-service-owner": "trip",
         "x-contract": "internal-proposal",
         "x-fr": [],
@@ -463,7 +463,7 @@
           "trip"
         ],
         "summary": "Hủy Trip có điều kiện",
-        "description": "Cancel/PICKED_UP phân xử tại trip_db. Không hủy sau PICKED_UP; commit CANCELED/outbox cùng transaction. Retry cùng operationId trả kết quả cũ.",
+        "description": "Cancel/PICKED_UP phân xử tại trip_db. Không hủy sau PICKED_UP; commit CANCELED/outbox cùng transaction. Retry cùng operationId trả kết quả cũ. Rejects PAID Trips with 409 TRIP_ALREADY_PAID (refund unsupported), and reserved in-flight payments with 409 PAYMENT_IN_PROGRESS.",
         "x-service-owner": "trip",
         "x-contract": "internal-proposal",
         "x-fr": [],
@@ -618,7 +618,7 @@
           "trip"
         ],
         "summary": "Kiểm tra điều kiện thanh toán",
-        "description": "Trip kiểm tra actor/ownership, COMPLETED và Fare hợp lệ. 409 nếu chưa sẵn sàng. Payment không dùng PAID projection làm cơ chế duy nhất chống charge trùng.",
+        "description": "Verifies signed Customer ownership, activated=true, non-canceled lifecycle status and ready Fare. Legacy Fare without fareStatus is recognized as READY. Does not authorize a provider charge; Payment obtains an atomic authorization before charging.",
         "x-service-owner": "trip",
         "x-contract": "internal-proposal",
         "x-fr": [],
@@ -664,7 +664,10 @@
                     "customerId",
                     "status",
                     "paymentStatus",
-                    "fare"
+                    "fare",
+                    "activated",
+                    "fareStatus",
+                    "userId"
                   ],
                   "properties": {
                     "tripId": {
@@ -676,11 +679,7 @@
                       "minLength": 1
                     },
                     "status": {
-                      "type": "string",
-                      "minLength": 1,
-                      "enum": [
-                        "COMPLETED"
-                      ]
+                      "$ref": "#/components/schemas/TripStatus"
                     },
                     "paymentStatus": {
                       "type": "string",
@@ -692,6 +691,21 @@
                     },
                     "fare": {
                       "$ref": "#/components/schemas/Fare"
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "activated": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "fareStatus": {
+                      "type": "string",
+                      "enum": [
+                        "READY"
+                      ]
                     }
                   }
                 }
@@ -890,6 +904,162 @@
           "driver"
         ]
       }
+    },
+    "/api/v1/internal-trips/{id}/payment-authorizations": {
+      "post": {
+        "operationId": "trip_post__internal_trips_id_payment_authorizations",
+        "tags": [
+          "trip"
+        ],
+        "summary": "Authorize one persisted payment before provider submission",
+        "description": "Payment service only. Atomically verifies the frozen Fare and reserves paymentId against cancellation. Same paymentId retries safely; another paymentId is rejected. Cancellation is blocked until payment.failed releases the reservation or payment.completed marks PAID. No user token is persisted for background jobs.",
+        "x-service-owner": "trip",
+        "x-contract": "internal-proposal",
+        "x-fr": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Xác thực/chữ ký thất bại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sai role, caller hoặc ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tài nguyên",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Xung đột trạng thái, dữ liệu trùng hoặc idempotency conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency chưa sẵn sàng; không suy diễn mutation chưa thực hiện",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-callers": [
+          "payment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "paymentId",
+                  "tripId",
+                  "customerId",
+                  "fareId",
+                  "amount",
+                  "currency"
+                ],
+                "properties": {
+                  "paymentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "tripId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fareId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 1,
+                    "enum": [
+                      "VND"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1004,6 +1174,35 @@
             "type": "string",
             "minLength": 1,
             "format": "date-time"
+          },
+          "baseFare": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Frozen amount in VND calculated when the Trip is created."
+          },
+          "distanceFare": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Frozen amount in VND calculated when the Trip is created."
+          },
+          "timeFare": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Frozen amount in VND calculated when the Trip is created."
+          }
+        }
+      },
+      "Ack": {
+        "type": "object",
+        "required": [
+          "ack"
+        ],
+        "properties": {
+          "ack": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
           }
         }
       }

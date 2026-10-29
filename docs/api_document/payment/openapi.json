@@ -24,7 +24,7 @@
           "payment"
         ],
         "summary": "Tạo thanh toán điện tử",
-        "description": "Trip COMPLETED, đúng owner và Fare hợp lệ lấy từ Trip. Không nhận amount từ client. Cùng key/user và body trả nguyên HTTP status/body gốc; khác body trả 409. Khóa tripId ngăn charge lại khi đổi key hoặc projection PAID chưa cập nhật. GET dùng để lấy trạng thái mới nhất.",
+        "description": "Allows payment before, during or after a Trip: activated=true, Fare READY, lifecycle ASSIGNED through COMPLETED, never CANCELED. Amount comes only from backend Fare; client amount is rejected. Same key/user and body replays the original HTTP status/body; changed body returns 409. The persisted job atomically authorizes with Trip before contacting the provider, preventing cancellation/charge races. A cancellation that wins the race makes the Payment FAILED without charging. Active/completed payment per tripId prevents duplicate charges even before the PAID projection arrives. Callback HMAC and provider idempotency remain unchanged.",
         "x-service-owner": "payment",
         "x-contract": "srs",
         "x-fr": [

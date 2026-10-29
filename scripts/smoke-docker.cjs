@@ -42,13 +42,24 @@ async function main() {
     assert.ok(offer,'Kafka matching did not create offer');
     const accepted=await request('PATCH',`/api/v1/booking-offers/${offer.offerId}`,{status:'ACCEPTED'},driver);assert.equal(accepted.status,200,JSON.stringify(accepted));
     const id=accepted.body.tripId;
-    for(const status of ['DRIVER_ARRIVED','PICKED_UP','IN_PROGRESS'])assert.equal((await request('PATCH',`/api/v1/trips/${id}`,{status},driver)).status,200);
+    const assigned=await request('GET',`/api/v1/trips/${id}`,undefined,customer);
+    assert.equal(assigned.status,200);assert.equal(assigned.body.status,'ASSIGNED');assert.equal(assigned.body.activated,true);assert.equal(assigned.body.fareStatus,'READY');assert.ok(assigned.body.distanceKm>0);
+    const frozenFare=await request('GET',`/api/v1/trips/${id}/fares`,undefined,customer);assert.equal(frozenFare.status,200,JSON.stringify(frozenFare));
+    const upfrontKey=`smoke-upfront-${id}`,payBody={tripId:id,method:'ELECTRONIC'};
+    const upfront=await request('POST','/api/v1/payments',payBody,customer,{'idempotency-key':upfrontKey});assert.equal(upfront.status,202,JSON.stringify(upfront));
+    const replay=await request('POST','/api/v1/payments',payBody,customer,{'idempotency-key':upfrontKey});assert.deepEqual(replay.body,upfront.body);
+    for(let i=0;i<30;i++){const row=await request('GET',`/api/v1/payments/${upfront.body.paymentId}`,undefined,customer);if(row.body.status==='COMPLETED')break;if(i===29)assert.fail(JSON.stringify(row));await sleep(1000);}
+    for(let i=0;i<30;i++){const row=await request('GET',`/api/v1/trips/${id}`,undefined,customer);if(row.body.paymentStatus==='PAID')break;if(i===29)assert.fail(JSON.stringify(row));await sleep(1000);}
+    const canceled=await request('PATCH',`/api/v1/bookings/${booking.body.bookingId}`,{status:'CANCELED',reason:'paid smoke'},customer);assert.equal(canceled.status,409);assert.equal(canceled.body.code,'TRIP_ALREADY_PAID');
+    for(const status of ['DRIVER_ARRIVING','DRIVER_ARRIVED','PICKED_UP','IN_PROGRESS'])assert.equal((await request('PATCH',`/api/v1/trips/${id}`,{status},driver)).status,200);
     const recorded=Date.now();
     for(const [offset,lng]of [[0,106.7009],[5000,106.7019]]){const location=await request('POST',`/api/v1/trips/${id}/locations`,{latitude:10.7769,longitude:lng,recordedAt:new Date(recorded+offset).toISOString()},driver);assert.equal(location.status,201,JSON.stringify(location));}
+    const tracked=await request('GET',`/api/v1/trips/${id}`,undefined,customer);assert.equal(tracked.body.distanceKm,assigned.body.distanceKm);assert.ok(tracked.body.trackedDistanceKm>0);assert.equal(tracked.body.latestLocation.longitude,106.7019);
     assert.equal((await request('PATCH',`/api/v1/trips/${id}`,{status:'COMPLETED'},driver)).status,200);
     const fare=await request('GET',`/api/v1/trips/${id}/fares`,undefined,customer);assert.equal(fare.status,200,JSON.stringify(fare));assert.ok(fare.body.totalAmount>15000);
+    assert.deepEqual(fare.body,frozenFare.body);
     for(let i=0;i<30;i++){const row=await request('GET','/api/v1/drivers/DRV-1',undefined,driver);if(row.body.availabilityStatus==='AVAILABLE')break;if(i===29)assert.fail('Driver not released by trip.completed');await sleep(1000);}
-    console.log('PASS: real Kafka matching -> assignment -> tracking -> Fare -> Driver release');
+    console.log('PASS: real Kafka matching -> assignment/Fare -> upfront payment/PAID -> tracking -> completion with frozen Fare -> Driver release');
   }
   console.log(JSON.stringify({status:'PASS',checks:['real owner databases','ownership','late cancellation','concurrent payment idempotency','durable sandbox callback HMAC','Kafka payment.completed -> Trip PAID','callback authentication'],paymentId,key}));
 }

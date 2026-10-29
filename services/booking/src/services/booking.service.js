@@ -138,10 +138,14 @@ module.exports = (repository) => {
       workflow = await step(workflow.assignmentId, { tripCreated: true });
     }
     if (!workflow.confirmed) {
-      await C.ipc('driver', `/api/v1/internal-drivers/${workflow.driverId}/reservations/confirmations`, {
-        method: 'POST',
-        body: { assignmentId: workflow.assignmentId, tripId: workflow.tripId },
-      });
+      await C.ipc(
+        'driver',
+        `/api/v1/internal-drivers/${workflow.driverId}/reservations/confirmations`,
+        {
+          method: 'POST',
+          body: { assignmentId: workflow.assignmentId, tripId: workflow.tripId },
+        },
+      );
       workflow = await step(workflow.assignmentId, { confirmed: true });
     }
     await repository.tx(async (tx) => {
@@ -375,10 +379,12 @@ module.exports = (repository) => {
             'Cancellation reason differs',
           );
           C.demand(
-            previous.status !== 'REJECTED',
+            previous.status !== 'REJECTED' || previous.failureCode === 'PAYMENT_IN_PROGRESS',
             409,
-            'TRIP_ALREADY_IN_PROGRESS',
-            'Cancellation was rejected by Trip',
+            previous.failureCode || 'TRIP_ALREADY_IN_PROGRESS',
+            previous.failureCode === 'TRIP_ALREADY_PAID'
+              ? 'Cannot cancel a paid Trip; refunds are not supported'
+              : 'Cancellation was rejected by Trip',
           );
           return previous;
         }
@@ -400,7 +406,11 @@ module.exports = (repository) => {
         if (e.status === 409)
           await repository.tx(async (tx) => {
             const row = await tx.get('cancellations', workflow.operationId);
-            await tx.put('cancellations', row.operationId, { ...row, status: 'REJECTED' });
+            await tx.put('cancellations', row.operationId, {
+              ...row,
+              status: 'REJECTED',
+              failureCode: e.code,
+            });
           });
         throw e;
       }

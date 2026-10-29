@@ -5,6 +5,14 @@ module.exports = (service) => ({
   handle(operation) {
     return async (req, res, next) => {
       try {
+        // Share one login quota across all roles, including invalid login bodies.
+        if (
+          req.method === 'POST' &&
+          ['/api/v1/customers/login', '/api/v1/drivers/login', '/api/v1/admin/login'].includes(
+            operation.route,
+          )
+        )
+          await service.consumeQuota(`login-ip:${req.socket.remoteAddress}`, 10);
         const requiresUser = (operation.operation.security || [{ bearerAuth: [] }]).some((item) =>
           Object.hasOwn(item, 'bearerAuth'),
         );

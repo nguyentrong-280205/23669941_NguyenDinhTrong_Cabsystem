@@ -2,6 +2,8 @@
 
 Thanh toán, callback, idempotency và đối soát; Fare lấy từ Trip.
 
+Cho phép trả trước/trong/sau chuyến khi Trip activated, Fare READY và chưa CANCELED. Backend lấy amount từ Fare; client gửi amount bị từ chối. Worker xin payment authorization từ Trip trước khi gọi provider, để ngăn hủy/charge đồng thời. Payment completed vẫn cập nhật Trip PAID qua Kafka. Chi tiết: [cơ chế Fare và trả trước](../../upfront-fare.md).
+
 - [openapi.json](openapi.json): API qua Gateway.
 - Service này không cần thêm HTTP nội bộ theo danh mục IPC hiện tại; xử lý bất đồng bộ xem [Kafka](../kafka/README.md).
 

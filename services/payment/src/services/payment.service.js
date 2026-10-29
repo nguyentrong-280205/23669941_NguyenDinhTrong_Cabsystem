@@ -9,6 +9,7 @@ module.exports = (repository) => {
     return row;
   }
   async function provider(payment) {
+    if (['COMPLETED', 'FAILED'].includes(payment.status)) return;
     C.demand(
       process.env.PAYMENT_PROVIDER_URL,
       500,
@@ -21,6 +22,48 @@ module.exports = (repository) => {
       amount: payment.amount,
       currency: payment.currency,
     };
+    // Trip atomically serializes authorization with cancellation before any charge.
+    // Retry with the persisted paymentId also covers a lost authorization response.
+    try {
+      await C.ipc(
+        'trip',
+        `/api/v1/internal-trips/${encodeURIComponent(payment.tripId)}/payment-authorizations`,
+        {
+          method: 'POST',
+          body: { ...body, customerId: payment.customerId, fareId: payment.fareId },
+        },
+      );
+    } catch (error) {
+      if ([400, 404, 409].includes(error.status)) {
+        await repository.tx(async (tx) => {
+          const current = await get(payment.paymentId, tx);
+          if (['COMPLETED', 'FAILED'].includes(current.status)) return;
+          const row = {
+            ...current,
+            status: 'FAILED',
+            failureCode: error.code,
+            version: current.version + 1,
+            updatedAt: C.now(),
+          };
+          await tx.put('payments', row.paymentId, row);
+          await tx.put('attempts', row.paymentId, {
+            ...(await tx.get('attempts', row.paymentId)),
+            submitted: true,
+            failureCode: error.code,
+          });
+          await emit(tx, 'payment.failed', row.tripId, row.version, {
+            paymentId: row.paymentId,
+            tripId: row.tripId,
+            customerId: row.customerId,
+            amount: row.amount,
+            currency: row.currency,
+            failureCode: error.code,
+          });
+          await C.audit(tx, 'payment.authorization.failed', row.paymentId);
+        });
+      }
+      throw error;
+    }
     let response;
     try {
       response = await fetch(`${process.env.PAYMENT_PROVIDER_URL}/api/v1/charges`, {
@@ -71,6 +114,12 @@ module.exports = (repository) => {
   }
   const actions = {
     createPayment: async (input) => {
+      C.demand(
+        !Object.hasOwn(input.body, 'amount'),
+        400,
+        'VALIDATION_ERROR',
+        'Client amount is not accepted',
+      );
       const key = input.headers['idempotency-key'];
       C.demand(
         typeof key === 'string' && key.length <= 100 && key.length > 0,
@@ -102,7 +151,16 @@ module.exports = (repository) => {
         'Payment is not owned by this Customer',
       );
       C.demand(
-        fare.status === 'COMPLETED' &&
+        fare.activated === true &&
+          fare.fareStatus === 'READY' &&
+          [
+            'ASSIGNED',
+            'DRIVER_ARRIVING',
+            'DRIVER_ARRIVED',
+            'PICKED_UP',
+            'IN_PROGRESS',
+            'COMPLETED',
+          ].includes(fare.status) &&
           Number.isSafeInteger(fare.fare?.totalAmount) &&
           fare.fare.totalAmount >= 0 &&
           fare.fare.currency === 'VND' &&
@@ -110,7 +168,7 @@ module.exports = (repository) => {
           fare.paymentStatus !== 'PAID',
         409,
         'FARE_NOT_READY',
-        'Completed Trip with unpaid Fare required',
+        'Activated, non-canceled Trip with ready unpaid Fare required',
       );
       const response = await repository.tx(async (tx) => {
         const old = await tx.get('idempotency', recordId);

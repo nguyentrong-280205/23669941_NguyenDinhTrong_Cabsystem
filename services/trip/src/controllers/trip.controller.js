@@ -80,9 +80,23 @@ module.exports = (service) => ({
       next(error);
     }
   },
+  async updateReview(req, res, next, operation) {
+    try {
+      respond(res, operation, await service.actions.updateReview(toCommand(req)));
+    } catch (error) {
+      next(error);
+    }
+  },
   async getPaymentContext(req, res, next, operation) {
     try {
       respond(res, operation, await service.actions.getPaymentContext(toCommand(req)));
+    } catch (error) {
+      next(error);
+    }
+  },
+  async authorizePayment(req, res, next, operation) {
+    try {
+      respond(res, operation, await service.actions.authorizePayment(toCommand(req)));
     } catch (error) {
       next(error);
     }

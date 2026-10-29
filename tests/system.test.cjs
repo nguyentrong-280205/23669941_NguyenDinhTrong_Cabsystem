@@ -130,41 +130,6 @@ assert.equal((await request('PATCH',`/api/v1/booking-offers/${o.offerId}`,{statu
       assert.equal((await request('GET',path,undefined,adminToken)).status,200);
     } finally {process.env.TRIP_SERVICE_URL=url;}
   });
-  await t.test('Trip ownership and state machine; no Fare on incomplete Trip',async()=>{
-    const outsider=S.accessToken({userId:jwt.decode(driverToken).userId,role:'DRIVER',driverId:'OTHER'});
-    assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status:'DRIVER_ARRIVED'},outsider)).status,403);
-    assert.equal((await request('GET',`/api/v1/trips/${tripId}`,undefined,customerBToken)).status,403);
-    assert.equal((await request('GET',`/api/v1/trips/${tripId}/fares`,undefined,customerAToken)).status,409);
-    assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status:'COMPLETED'},driverToken)).status,409);
-    for(const status of ['DRIVER_ARRIVED','PICKED_UP','IN_PROGRESS']) assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status},driverToken)).status,200);
-    assert.equal((await request('PATCH',`/api/v1/bookings/${bookingId}`,{status:'CANCELED',reason:'late'},customerAToken)).status,409);
-    assert.equal((await stores.booking.get('bookings',bookingId)).status,'DRIVER_ASSIGNED');
-  });
-  await t.test('tracking uses Driver owner; Fare and completion event commit together',async()=>{
-    const base=Date.parse("2099-01-01T00:00:00.000Z");
-    for(const [i,lng]of [[0,0.001],[1,0.002]]){const r=await request('POST',`/api/v1/trips/${tripId}/locations`,{latitude:0,longitude:lng,recordedAt:new Date(base-i*5000).toISOString()},driverToken);assert.equal(r.status,201,JSON.stringify(r));}
-    const beforeReplay=(await stores.trip.get('trips',tripId)).distanceKm;
-    assert.equal((await request('POST',`/api/v1/trips/${tripId}/locations`,{latitude:0,longitude:0.001,recordedAt:new Date(base).toISOString()},driverToken)).status,201);
-    assert.equal((await stores.trip.get('trips',tripId)).distanceKm,beforeReplay);
-    const found=await request('GET',`/api/v1/trips/${tripId}`,undefined,customerAToken);assert.equal(found.status,200,JSON.stringify(found));assert.equal(found.body.latestLocation.longitude,0.002);
-    assert.equal(found.body.review,null);
-    assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status:'COMPLETED'},driverToken)).status,200);
-    await drain();assert.equal((await stores.booking.get('bookings',bookingId)).status,'COMPLETED');assert.equal((await stores.driver.get('drivers',driver.driverId)).availabilityStatus,'AVAILABLE');
-    assert.equal((await request('GET',`/api/v1/drivers/${driver.driverId}`,undefined,customerAToken)).status,200);
-    assert.equal((await request('GET',`/api/v1/trips/${tripId}/fares`,undefined,customerAToken)).status,200);
-  });
-  await t.test('fractional/duplicate reviews rejected and ownership checked',async()=>{
-    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:4.9},customerAToken)).status,400);
-    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:5},customerBToken)).status,403);
-    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:5,comment:'Good'},customerAToken)).status,201);
-    const reviewed=await request('GET',`/api/v1/trips/${tripId}`,undefined,customerAToken);
-    assert.equal(reviewed.status,200,JSON.stringify(reviewed));
-    assert.equal(reviewed.body.review.comment,'Good');
-    assert.equal(reviewed.body.review.score,5);
-    assert.equal(reviewed.body.review.tripId,tripId);
-    assert.equal((await request('GET',`/api/v1/trips/${tripId}`,undefined,customerBToken)).status,403);
-    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:5},customerAToken)).status,409);
-  });
   await t.test('Payment fails closed on Trip outage and wrong owner; rejects client amount',async()=>{
     const url=process.env.TRIP_SERVICE_URL;process.env.TRIP_SERVICE_URL='http://127.0.0.1:1';assert.equal((await request('POST','/api/v1/payments',{tripId,method:'ELECTRONIC'},customerAToken,{'idempotency-key':'offline'})).status,503);process.env.TRIP_SERVICE_URL=url;
     assert.equal((await request('POST','/api/v1/payments',{tripId,method:'ELECTRONIC'},customerBToken,{'idempotency-key':'wrong-owner'})).status,403);
@@ -179,6 +144,18 @@ assert.equal((await request('PATCH',`/api/v1/booking-offers/${o.offerId}`,{statu
     assert.equal((await request('POST','/api/v1/payments',body,customerBToken,{'idempotency-key':'pay-1'})).status,403);
     assert.equal((await stores.payment.list('payments')).length,1);
   });
+  await t.test('provider job authorizes ASSIGNED Trip once and blocks cancellation before Kafka PAID',async()=>{
+    const charges=new Map();
+    const bound=await listen((req,res)=>{let raw='';req.on('data',chunk=>raw+=chunk);req.on('end',()=>{const body=JSON.parse(raw);assert.equal(req.headers['idempotency-key'],paymentId);assert.equal(body.amount,(charges.get(paymentId)||body).amount);charges.set(paymentId,body);res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({providerTransactionId:'PROVIDER-1'}));});});
+    servers.push(bound.server);const original=process.env.PAYMENT_PROVIDER_URL;
+    try {
+      process.env.PAYMENT_PROVIDER_URL=bound.url;
+      const trip=await stores.trip.get('trips',tripId);assert.equal(trip.status,'ASSIGNED');
+      await tick('payment');await tick('payment');assert.equal(charges.size,1);
+      assert.equal((await stores.trip.get('trips',tripId)).paymentReservation.paymentId,paymentId);
+      const canceled=await request('PATCH',`/api/v1/bookings/${bookingId}`,{status:'CANCELED',reason:'prepay'},customerAToken);assert.equal(canceled.status,409);assert.equal(canceled.body.code,'PAYMENT_IN_PROGRESS');
+    } finally {if(original===undefined)delete process.env.PAYMENT_PROVIDER_URL;else process.env.PAYMENT_PROVIDER_URL=original;}
+  });
   await t.test('callback verifies exact raw bytes, amount, dedup and terminal state; Kafka marks Trip PAID',async()=>{
     const payment=await stores.payment.get('payments',paymentId),body={paymentId,providerTransactionId:'PROVIDER-1',status:'COMPLETED',amount:payment.amount,currency:'VND'};
     assert.equal((await request('POST','/api/v1/payment-callbacks',body)).status,401);
@@ -187,6 +164,42 @@ assert.equal((await request('PATCH',`/api/v1/booking-offers/${o.offerId}`,{statu
     assert.equal((await request('POST','/api/v1/payment-callbacks',body,undefined,{'x-provider-signature':C.hmac(JSON.stringify(body),'PAYMENT_PROVIDER_SECRET')})).status,200);
     const old={...body,status:'FAILED'};assert.equal((await request('POST','/api/v1/payment-callbacks',old,undefined,{'x-provider-signature':C.hmac(JSON.stringify(old),'PAYMENT_PROVIDER_SECRET')})).status,409);
     await drain();assert.equal((await stores.trip.get('trips',tripId)).paymentStatus,'PAID');assert.equal((await stores.payment.list('callbacks')).length,1);
+    const canceled=await request('PATCH',`/api/v1/bookings/${bookingId}`,{status:'CANCELED',reason:'prepay'},customerAToken);assert.equal(canceled.status,409);assert.equal(canceled.body.code,'TRIP_ALREADY_PAID');
+  });
+  await t.test('Trip ownership and state machine; frozen Fare available before pickup',async()=>{
+    const outsider=S.accessToken({userId:jwt.decode(driverToken).userId,role:'DRIVER',driverId:'OTHER'});
+    assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status:'DRIVER_ARRIVED'},outsider)).status,403);
+    assert.equal((await request('GET',`/api/v1/trips/${tripId}`,undefined,customerBToken)).status,403);
+    const fareResponse=await request('GET',`/api/v1/trips/${tripId}/fares`,undefined,customerAToken);assert.equal(fareResponse.status,200,JSON.stringify(fareResponse));const assigned=await stores.trip.get('trips',tripId);assert.equal(assigned.fareStatus,'READY');assert.ok(assigned.distanceKm>0);assert.equal(assigned.paymentStatus,'PAID');
+    assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status:'COMPLETED'},driverToken)).status,409);
+    for(const status of ['DRIVER_ARRIVED','PICKED_UP','IN_PROGRESS']) assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status},driverToken)).status,200);
+    assert.equal((await request('PATCH',`/api/v1/bookings/${bookingId}`,{status:'CANCELED',reason:'late'},customerAToken)).status,409);
+    assert.equal((await stores.booking.get('bookings',bookingId)).status,'DRIVER_ASSIGNED');
+  });
+  await t.test('tracking uses Driver owner; Fare and completion event commit together',async()=>{
+    const base=Date.parse("2099-01-01T00:00:00.000Z");
+    for(const [i,lng]of [[0,0.001],[1,0.002]]){const r=await request('POST',`/api/v1/trips/${tripId}/locations`,{latitude:0,longitude:lng,recordedAt:new Date(base-i*5000).toISOString()},driverToken);assert.equal(r.status,201,JSON.stringify(r));}
+    const frozen=await stores.trip.get('trips',tripId);const beforeReplay=frozen.distanceKm;
+    assert.equal((await request('POST',`/api/v1/trips/${tripId}/locations`,{latitude:0,longitude:0.001,recordedAt:new Date(base).toISOString()},driverToken)).status,201);
+    assert.equal((await stores.trip.get('trips',tripId)).distanceKm,beforeReplay);
+    const found=await request('GET',`/api/v1/trips/${tripId}`,undefined,customerAToken);assert.equal(found.status,200,JSON.stringify(found));assert.equal(found.body.latestLocation.longitude,0.002);
+    assert.equal(found.body.review,null);
+    assert.equal((await request('PATCH',`/api/v1/trips/${tripId}`,{status:'COMPLETED'},driverToken)).status,200);
+    const completed=await stores.trip.get('trips',tripId);assert.deepEqual(completed.fare,frozen.fare);assert.equal(completed.distanceKm,frozen.distanceKm);assert.equal(completed.paymentStatus,'PAID');assert.ok(completed.trackedDistanceKm>0);await drain();assert.equal((await stores.booking.get('bookings',bookingId)).status,'COMPLETED');assert.equal((await stores.driver.get('drivers',driver.driverId)).availabilityStatus,'AVAILABLE');
+    assert.equal((await request('GET',`/api/v1/drivers/${driver.driverId}`,undefined,customerAToken)).status,200);
+    assert.equal((await request('GET',`/api/v1/trips/${tripId}/fares`,undefined,customerAToken)).status,200);
+  });
+  await t.test('fractional/duplicate reviews rejected and ownership checked',async()=>{
+    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:4.9},customerAToken)).status,400);
+    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:5},customerBToken)).status,403);
+    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:5,comment:'Good'},customerAToken)).status,201);
+    const reviewed=await request('GET',`/api/v1/trips/${tripId}`,undefined,customerAToken);
+    assert.equal(reviewed.status,200,JSON.stringify(reviewed));
+    assert.equal(reviewed.body.review.comment,'Good');
+    assert.equal(reviewed.body.review.score,5);
+    assert.equal(reviewed.body.review.tripId,tripId);
+    assert.equal((await request('GET',`/api/v1/trips/${tripId}`,undefined,customerBToken)).status,403);
+    assert.equal((await request('POST',`/api/v1/trips/${tripId}/reviews`,{score:5},customerAToken)).status,409);
   });
   await t.test('Notification read is scoped; inbox dedup has no repeated effects',async()=>{
     const notices=await request('GET','/api/v1/notifications',undefined,customerAToken);assert.equal(notices.status,200,JSON.stringify(notices));assert.ok(notices.body.items.length>0);
@@ -233,6 +246,22 @@ assert.equal((await request('PATCH',`/api/v1/booking-offers/${o.offerId}`,{statu
     assert.equal((await request('GET','/api/v1/health')).status,200);
     redis.counts.clear();
     assert.equal((await request('GET','/api/v1/notifications',undefined,customerAToken)).status,200);
+  });
+  await t.test('login quota counts failed and invalid attempts across roles and recovers',async()=>{
+    redis.counts.clear();
+    assert.equal((await request('POST','/api/v1/customers/login',{email:'a@example.com',password:'wrong-password'})).status,401);
+    const routes=['/api/v1/customers/login','/api/v1/drivers/login','/api/v1/admin/login'];
+    for(let i=1;i<10;i++)assert.equal((await request('POST',routes[i%3],{})).status,400);
+    for(const route of routes){
+      const rejected=await request('POST',route,{});
+      assert.equal(rejected.status,429);
+      assert.equal(rejected.body.code,'RATE_LIMIT_EXCEEDED');
+      assert.equal(rejected.headers.get('retry-after'),'60');
+    }
+    assert.equal((await request('GET','/api/v1/notifications',undefined,customerAToken)).status,200);
+    redis.counts.delete('cab:rate:login-ip:127.0.0.1'); // Simulate the Redis window expiring.
+    assert.equal((await request('POST','/api/v1/customers/login',{email:'a@example.com',password})).status,200);
+    redis.counts.clear();
   });
   await t.test('REST migration preserves query ownership, admin status policy and offer rejection',async()=>{
     assert.equal((await request('GET','/api/v1/ready')).status,200);
