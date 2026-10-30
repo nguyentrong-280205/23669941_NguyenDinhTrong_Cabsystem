@@ -270,6 +270,15 @@ module.exports = (repository) => {
         'Unknown vehicle type',
       );
       return repository.tx(async (tx) => {
+        const existingBookings = await tx.list('bookings', { customerId: customer.customerId });
+        C.demand(
+          !existingBookings.some((booking) =>
+            !['CANCELED', 'COMPLETED', 'NO_DRIVER_FOUND'].includes(booking.status),
+          ),
+          429,
+          'ACTIVE_BOOKING_EXISTS',
+          'Customer already has an active Booking; finish or cancel it before booking again',
+        );
         const bookingId = C.id(),
           row = {
             ...input.body,

@@ -15,7 +15,7 @@ async function main() {
       const store = createStore(service); await store.init(); stores[service] = store;
     }
     const passwordHash = await bcrypt.hash('123456', 12);
-    const users = [ { userId: 'USR-ADMIN', fullName: 'System Admin', role: 'ADMIN', email: 'admin@cab.com' }, ...['A','B'].map(s => ({ userId: `USR-${s}`, customerId: `CUS-${s}`, fullName: `Customer ${s}`, role: 'CUSTOMER', email: `customer${s.toLowerCase()}@cab.com` })), ...Array.from({ length: 8 }, (_,i) => ({ userId: `USR-DRV-${i+1}`, driverId: `DRV-${i+1}`, fullName: `Driver ${i+1}`, role: 'DRIVER', email: `driver${i+1}@cab.com` })) ];
+    const users = [ { userId: 'USR-ADMIN', fullName: 'System Admin', role: 'ADMIN', email: 'admin@cab.com' }, ...['A','B'].map(s => ({ userId: `USR-${s}`, customerId: `CUS-${s}`, fullName: `Customer ${s}`, role: 'CUSTOMER', email: `customer${s.toLowerCase()}@cab.com` })), ...Array.from({ length: 10 }, (_,i) => ({ userId: `USR-DRV-${i+1}`, driverId: `DRV-${i+1}`, fullName: `Driver ${i+1}`, role: 'DRIVER', email: `driver${i+1}@cab.com` })) ];
     await stores.identity.tx(async tx => {
       // Reset demo login passwords even when containers are recreated with existing volumes.
       for (const user of await tx.list('users')) await tx.put('users', user.userId, { ...user, passwordHash, updatedAt: C.now() });
@@ -23,10 +23,10 @@ async function main() {
     });
     await stores.customer.tx(async tx => { for (const s of ['A','B']) if (!await tx.get('customers', `CUS-${s}`)) await tx.create('customers', `CUS-${s}`, { customerId: `CUS-${s}`, userId: `USR-${s}`, registrationId: `REG-${s}`, defaultPaymentMethod: 'CASH', createdAt: C.now(), updatedAt: C.now() }); });
     await stores.driver.tx(async tx => {
-      const approval = ['APPROVED','APPROVED','APPROVED','APPROVED','APPROVED','APPROVED','PENDING','PENDING'];
-      const availability = ['AVAILABLE','AVAILABLE','BUSY','OFFLINE','SUSPENDED','AVAILABLE','OFFLINE','OFFLINE'];
-      const latitude = [10.7787,10.7841,10.7805,10.7823,10.7832,10.7877,10.777,10.778];
-      for (let i=0;i<8;i++) {
+      const approval = ['APPROVED','APPROVED','APPROVED','APPROVED','APPROVED','APPROVED','PENDING','PENDING','PENDING','PENDING'];
+      const availability = ['AVAILABLE','AVAILABLE','BUSY','OFFLINE','SUSPENDED','AVAILABLE','OFFLINE','OFFLINE','OFFLINE','OFFLINE'];
+      const latitude = [10.7787,10.7841,10.7805,10.7823,10.7832,10.7877,10.777,10.778,10.779,10.780];
+      for (let i=0;i<10;i++) {
         const driverId = `DRV-${i+1}`; if (await tx.get('drivers', driverId)) continue;
         const license = `DEMO-LICENSE-${i+1}`;
         await tx.create('drivers', driverId, { driverId, userId: `USR-DRV-${i+1}`, registrationId: `REG-DRV-${i+1}`, licenseCiphertext: C.encrypt(license), licenseFingerprint: C.hmac(license,'ENCRYPTION_KEY'), approvalStatus: approval[i], availabilityStatus: availability[i], onlineIntent: availability[i] === 'AVAILABLE', vehicle: { vehicleId: `VEH-${i+1}`, driverId, vehicleTypeId: 'VT-4SEATS', plateNumber: `DEMO-${i+1}`, status: 'ACTIVE' }, position: { type:'Point',coordinates:[106.7009,latitude[i]] }, location: { locationId: `LOC-${i+1}`, latitude: latitude[i], longitude: 106.7009, recordedAt: C.now() }, version:1, createdAt:C.now(), updatedAt:C.now() });
@@ -49,7 +49,7 @@ async function main() {
     await stores.booking.tx(async tx=>{if(!await tx.get('bookings',late.bookingId)){await tx.create('bookings',late.bookingId,{...late,status:'DRIVER_ASSIGNED',assignedDriverId:'DRV-4'});await tx.create('assignments',late.assignmentId,{assignmentId:late.assignmentId,bookingId:late.bookingId,tripId:late.tripId,driverId:'DRV-4',status:'COMPLETED'});}});
     const currentLate = await stores.trip.get('trips',late.tripId);
     await stores.driver.tx(async tx=>{const d=await tx.get('drivers','DRV-4');if(!d.reservation && !['COMPLETED','CANCELED'].includes(currentLate.status))await tx.put('drivers','DRV-4',{...d,availabilityStatus:'BUSY',reservation:{assignmentId:late.assignmentId,bookingId:late.bookingId,tripId:late.tripId,driverId:'DRV-4',phase:'CONFIRMED'}});});
-    console.log('Demo seeded; all existing User passwords reset to the demo password. Other existing data preserved: 2 Customers, 8 Drivers, linked Bookings/Trips/Fares and late-cancel fixture. Login emails: admin@cab.com, customera@cab.com, customerb@cab.com, driver1@cab.com.');
+    console.log('Demo seeded; all existing User passwords reset to the demo password. Other existing data preserved: 2 Customers, 10 Drivers (new PENDING fixtures: driver9@cab.com / DRV-9 and driver10@cab.com / DRV-10), linked Bookings/Trips/Fares and late-cancel fixture. Login emails: admin@cab.com, customera@cab.com, customerb@cab.com, driver1@cab.com.');
   } finally { for (const store of Object.values(stores)) await store.close(); }
 }
 main().catch(() => { console.error('Seed failed; check dependencies and owner credentials'); process.exitCode=1; });

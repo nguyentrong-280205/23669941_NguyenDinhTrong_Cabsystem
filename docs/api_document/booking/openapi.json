@@ -24,7 +24,7 @@
           "booking"
         ],
         "summary": "Tạo yêu cầu đặt xe",
-        "description": "Xác minh Customer/userId phía server. Ghi Booking/outbox rồi matching bất đồng bộ. Giới hạn 30 request/phút/user và 120/phút/IP; vượt ngưỡng trả 429 trước tạo Booking.",
+        "description": "Xác minh Customer/userId phía server. Ghi Booking/outbox rồi matching bất đồng bộ. Giới hạn 30 request/phút/user và 120/phút/IP; vượt ngưỡng trả 429 trước tạo Booking. Each Customer may have only one active Booking. New requests return 429 ACTIVE_BOOKING_EXISTS until all previous Bookings are CANCELED, COMPLETED or NO_DRIVER_FOUND. This check is transactional and also applies to concurrent requests.",
         "x-service-owner": "booking",
         "x-contract": "srs",
         "x-fr": [
@@ -104,7 +104,7 @@
             }
           },
           "429": {
-            "description": "Vượt giới hạn gửi/request",
+            "description": "Rate limit exceeded or Customer already has an active Booking (ACTIVE_BOOKING_EXISTS). Retry-After applies to time-based rate limits only.",
             "content": {
               "application/json": {
                 "schema": {
