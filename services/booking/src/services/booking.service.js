@@ -1,6 +1,10 @@
 'use strict';
 const C = require('../../../../shared/lib/core');
 const { emit } = require('../../../../shared/lib/events');
+const validateCreateBooking = require('../../../../shared/lib/contracts')
+  .contract('booking')
+  .find((operation) => operation.method === 'post' && operation.route === '/api/v1/bookings')
+  .validate;
 module.exports = (repository) => {
   async function get(id, tx = repository) {
     const row = await tx.get('bookings', id);
@@ -258,6 +262,7 @@ module.exports = (repository) => {
   }
   const actions = {
     createBooking: async (input) => {
+      validateCreateBooking({ body: input.body, headers: input.headers || {}, params: {}, query: {} });
       const customer = await C.ipc(
         'customer',
         `/api/v1/internal-customers/${encodeURIComponent(input.user.customerId || '')}`,

@@ -13,7 +13,11 @@ test('one active Booking per customer, including concurrent requests and service
   };
   try {
     const store = memoryStore();
-    const input = customerId => ({ user: { customerId, userId: `U-${customerId}` }, body: { vehicleTypeId: 'VT-4SEATS' } });
+    const input = customerId => ({ user: { customerId, userId: `U-${customerId}` }, body: {
+      vehicleTypeId: 'VT-4SEATS',
+      pickup: { lat: 10.7769, lng: 106.7009, address: 'Pickup' },
+      destination: { lat: 10.7778, lng: 106.7015, address: 'Destination' },
+    } });
     const actions = makeBooking(store).actions;
     const results = await Promise.allSettled(Array.from({ length: 20 }, () => actions.createBooking(input('A'))));
     assert.equal(results.filter(r => r.status === 'fulfilled').length, 1);

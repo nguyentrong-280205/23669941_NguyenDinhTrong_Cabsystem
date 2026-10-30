@@ -149,16 +149,67 @@
                 ],
                 "properties": {
                   "pickup": {
-                    "$ref": "#/components/schemas/Point"
+                    "type": "object",
+                    "required": [
+                      "lat",
+                      "lng",
+                      "address"
+                    ],
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "address": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "\\S"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   "destination": {
-                    "$ref": "#/components/schemas/Point"
+                    "type": "object",
+                    "required": [
+                      "lat",
+                      "lng",
+                      "address"
+                    ],
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lng": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "address": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "\\S"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   "vehicleTypeId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "enum": [
+                      "VT-4SEATS",
+                      "VT-7SEATS"
+                    ]
                   }
-                }
+                },
+                "additionalProperties": false
               },
               "example": {
                 "pickup": {
@@ -171,7 +222,7 @@
                   "lng": 106.695,
                   "address": "Điểm đến demo"
                 },
-                "vehicleTypeId": "VT-001"
+                "vehicleTypeId": "VT-4SEATS"
               }
             }
           }
