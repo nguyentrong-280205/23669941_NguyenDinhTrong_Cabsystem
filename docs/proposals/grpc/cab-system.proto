@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package cab.proposed.v1;
+
+import "google/protobuf/struct.proto";
+
+// DESIGN PROPOSAL ONLY. No generated clients, servers or runtime integration.
+// The running CAB System uses HTTP/JSON and Kafka, not gRPC.
+// This draft illustrates a possible Gateway -> service RPC boundary.
+// Struct payloads are placeholders; production contracts need typed messages,
+// validation, authentication metadata and HTTP/gRPC error mappings.
+message Command {
+  string correlation_id = 1;
+  google.protobuf.Struct payload = 2;
+}
+
+message Result {
+  string correlation_id = 1;
+  google.protobuf.Struct payload = 2;
+}
+
+service IdentityService {
+  rpc RegisterCustomer(Command) returns (Result);
+  rpc RegisterDriver(Command) returns (Result);
+  rpc Login(Command) returns (Result);
+}
+
+service CustomerService {
+  rpc GetCustomer(Command) returns (Result);
+}
+
+service DriverService {
+  rpc GetDriver(Command) returns (Result);
+  rpc ListDriverApplications(Command) returns (Result);
+  rpc ReviewDriverApplication(Command) returns (Result);
+  rpc UpdateAvailability(Command) returns (Result);
+}
+
+service BookingService {
+  rpc CreateBooking(Command) returns (Result);
+  rpc ListCustomerBookings(Command) returns (Result);
+  rpc CancelBooking(Command) returns (Result);
+  rpc ListDriverOffers(Command) returns (Result);
+  rpc UpdateOffer(Command) returns (Result);
+}
+
+service TripService {
+  rpc GetTrip(Command) returns (Result);
+  rpc UpdateTripStatus(Command) returns (Result);
+  rpc GetFare(Command) returns (Result);
+  rpc CreateReview(Command) returns (Result);
+  rpc UpdateReview(Command) returns (Result);
+}
+
+service PaymentService {
+  rpc CreatePayment(Command) returns (Result);
+}
+
+service NotificationService {
+  rpc ListNotifications(Command) returns (Result);
+}
